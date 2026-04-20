@@ -88,3 +88,22 @@ body {
 .leaflet-popup-tip {
   background: #0d1117;
 }
+
+/* ── Mobile responsive ── */
+@media (max-width: 900px) {
+  body { overflow: auto; }
+
+  .ops-root {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .ops-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .panel {
+    min-height: 300px;
+  }
+}

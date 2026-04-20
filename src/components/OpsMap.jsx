@@ -17,6 +17,7 @@ export default function GlobeMap({ incidents, flyTo }) {
   const handlerRef = useRef(null)
   const [layer, setLayer]   = useState('Globe')
   const [popup, setPopup]   = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (!mountRef.current || viewerRef.current) return
@@ -43,6 +44,13 @@ export default function GlobeMap({ incidents, flyTo }) {
     viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#020408')
     viewer.scene.globe.enableLighting = false
     viewer.scene.globe.showGroundAtmosphere = true
+    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0a0d12')
+
+    // Dark imagery filter
+    viewer.imageryLayers.get(0).brightness = 0.6
+    viewer.imageryLayers.get(0).contrast = 1.2
+    viewer.imageryLayers.get(0).saturation = 0.5
+    viewer.imageryLayers.get(0).hue = 0.55
 
     // Add OpenStreetMap labels overlay
     const labelProvider = new Cesium.UrlTemplateImageryProvider({
@@ -53,7 +61,8 @@ export default function GlobeMap({ incidents, flyTo }) {
       maximumLevel: 19,
     })
     const labelLayer = viewer.imageryLayers.addImageryProvider(labelProvider)
-    labelLayer.alpha = 0.9
+    labelLayer.alpha = 0.8
+    labelLayer.minimumTerrainLevel = 3
 
     viewer.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(10, 20, 18000000),
@@ -122,6 +131,29 @@ export default function GlobeMap({ incidents, flyTo }) {
     })
   }, [flyTo])
 
+  const handleSearch = (e) => {
+    if (e.key !== 'Enter' || !search.trim()) return
+    const viewer = viewerRef.current
+    if (!viewer || viewer.isDestroyed()) return
+
+    // Simple geocode using Nominatim (free, no key)
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(search)}&format=json&limit=1`)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data[0]) {
+          viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(
+              parseFloat(data[0].lon),
+              parseFloat(data[0].lat),
+              800000
+            ),
+            duration: 2,
+          })
+          setSearch('')
+        }
+      }).catch(console.error)
+  }
+
   const tabs = ['Globe', 'Aircraft', 'Naval', 'Weather']
 
   const tagColor = (inc) => SEV_COLORS[inc.type === 'earthquake' ? 'earthquake' : inc.severity] || SEV_COLORS.monitor
@@ -139,7 +171,20 @@ export default function GlobeMap({ incidents, flyTo }) {
             }}>{l}</span>
           ))}
         </div>
-        <span style={{ fontSize: 9, color: '#378add' }}>{incidents.length} PLOTTED</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={handleSearch}
+            placeholder="Search location..."
+            style={{
+              background: '#060809', border: '1px solid #1e2530', borderRadius: 3,
+              color: '#c8cfd8', fontSize: 9, padding: '2px 6px', width: 120,
+              outline: 'none', fontFamily: 'Courier New'
+            }}
+          />
+          <span style={{ fontSize: 9, color: '#378add' }}>{incidents.length} PLOTTED</span>
+        </div>
       </div>
 
       {layer === 'Naval' ? (
