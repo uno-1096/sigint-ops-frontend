@@ -6,6 +6,7 @@ import CinemaPanel from './components/CinemaPanel'
 import Header from './components/Header'
 import BottomBar from './components/BottomBar'
 import BriefPanel from './components/BriefPanel'
+import AlertSystem from './components/AlertSystem'
 import './App.css'
 
 const API = 'https://ops.unocloud.us'
@@ -56,6 +57,7 @@ export default function App() {
     <div className="ops-root">
       <Header score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} connected={connected} lastUpdate={lastUpdate} />
       <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
+      <AlertSystem feedItems={feedItems} />
       <div className="ops-body">
         <CinemaPanel />
         <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />

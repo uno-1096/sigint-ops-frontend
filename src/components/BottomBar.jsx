@@ -1,4 +1,18 @@
 export default function BottomBar({ score, activeInc, sourcesOnline }) {
+  const exportData = () => {
+    fetch('https://ops.unocloud.us/api/feed')
+      .then(r => r.json())
+      .then(data => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+        const url  = URL.createObjectURL(blob)
+        const a    = document.createElement('a')
+        a.href     = url
+        a.download = `sigint-ops-export-${new Date().toISOString().slice(0,10)}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+      })
+  }
+
   const getLevel = (s) => {
     if (s >= 80) return 'CRITICAL'
     if (s >= 60) return 'ELEVATED'
@@ -58,14 +72,14 @@ export default function BottomBar({ score, activeInc, sourcesOnline }) {
         <div style={{ fontSize: 12, fontWeight: 'bold', color: '#afa9ec' }}>POLY</div>
       </div>
 
-      {/* IODA internet monitor */}
+      {/* Export */}
       <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-        onClick={() => window.open('https://ioda.inetintel.cc.gatech.edu/dashboard', '_blank')}>
+        onClick={exportData}>
         <div>
-          <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>Internet Monitor</div>
-          <div style={{ fontSize: 8, color: '#3a4a58', marginTop: 1 }}>IODA — click</div>
+          <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>Export Intel</div>
+          <div style={{ fontSize: 8, color: '#3a4a58', marginTop: 1 }}>Download JSON</div>
         </div>
-        <div style={{ fontSize: 12, fontWeight: 'bold', color: '#5dcaa5' }}>IODA</div>
+        <div style={{ fontSize: 12, fontWeight: 'bold', color: '#5dcaa5' }}>EXPORT</div>
       </div>
 
     </div>

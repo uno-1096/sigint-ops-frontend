@@ -9,7 +9,14 @@ function getAlertLevel(score) {
 
 export default function Header({ score, activeInc, sourcesOnline, connected, lastUpdate }) {
   const [time, setTime] = useState('')
+  const [history, setHistory] = useState([])
   const alert = getAlertLevel(score)
+
+  useEffect(() => {
+    if (score > 0) {
+      setHistory(prev => [...prev.slice(-23), score])
+    }
+  }, [score])
 
   useEffect(() => {
     const tick = () => {
@@ -76,6 +83,17 @@ export default function Header({ score, activeInc, sourcesOnline, connected, las
           </div>
           <div style={{ fontSize: 8, color: '#2a3545', letterSpacing: 1 }}>LOW ———————————— CRITICAL</div>
         </div>
+        <svg width="80" height="30" style={{ opacity: 0.7 }}>
+          {history.length > 1 && history.map((v, i) => {
+            if (i === 0) return null
+            const x1 = ((i-1) / 23) * 80
+            const x2 = (i / 23) * 80
+            const y1 = 28 - (history[i-1] / 100) * 26
+            const y2 = 28 - (v / 100) * 26
+            const col = v >= 80 ? '#e24b4a' : v >= 60 ? '#ef9f27' : '#97c459'
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={col} strokeWidth="1.5" />
+          })}
+        </svg>
       </div>
 
       {/* Right */}
