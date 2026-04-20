@@ -11,7 +11,7 @@ const SEV_COLORS = {
   earthquake: '#b077dd',
 }
 
-export default function GlobeMap({ incidents, flyTo }) {
+export default function GlobeMap({ incidents, aircraft, flyTo }) {
   const mountRef   = useRef(null)
   const viewerRef  = useRef(null)
   const handlerRef = useRef(null)
@@ -120,6 +120,48 @@ export default function GlobeMap({ incidents, flyTo }) {
 
   }, [incidents])
 
+
+
+  // Render aircraft on globe
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer || viewer.isDestroyed()) return
+
+    // Remove old aircraft
+    const toRemove = viewer.entities.values.filter(e => e.id && String(e.id).startsWith('ac-'))
+    toRemove.forEach(e => viewer.entities.remove(e))
+
+    if (!aircraft || !aircraft.length) return
+
+    aircraft.forEach((ac, i) => {
+      const isMil = ac.type === 'military'
+      viewer.entities.add({
+        id: 'ac-' + (ac.icao || i),
+        position: Cesium.Cartesian3.fromDegrees(ac.lon, ac.lat, (ac.altitude || 10000)),
+        point: {
+          pixelSize: isMil ? 7 : 4,
+          color: isMil
+            ? Cesium.Color.fromCssColorString('#ff6b35')
+            : Cesium.Color.fromCssColorString('#378add').withAlpha(0.6),
+          outlineColor: isMil
+            ? Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.3)
+            : Cesium.Color.fromCssColorString('#378add').withAlpha(0.2),
+          outlineWidth: 3,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          scaleByDistance: new Cesium.NearFarScalar(1e5, 1.5, 1e7, 0.3),
+        },
+        name: ac.callsign || 'Unknown',
+        description:
+          '<div style="background:#0d1117;color:#c8cfd8;font-family:Courier New,monospace;padding:10px;border-radius:4px;border-left:3px solid ' + (isMil ? '#ff6b35' : '#378add') + '">' +
+          '<b style="color:' + (isMil ? '#ff6b35' : '#378add') + '">' + (isMil ? 'MILITARY' : 'CIVIL') + '</b><br/>' +
+          'Callsign: ' + (ac.callsign || 'N/A') + '<br/>' +
+          'Alt: ' + Math.round((ac.altitude || 0) / 0.3048).toLocaleString() + ' ft<br/>' +
+          'Speed: ' + Math.round((ac.velocity || 0) * 1.944) + ' kts<br/>' +
+          'Heading: ' + (ac.heading || 0) + '°' +
+          '</div>',
+      })
+    })
+  }, [aircraft])
 
   // Fly to location when intel feed item clicked
   useEffect(() => {
@@ -236,7 +278,7 @@ export default function GlobeMap({ incidents, flyTo }) {
         display: layer === 'Globe' ? 'flex' : 'none',
         flexDirection: 'column', gap: 4
       }}>
-        {[['critical','#e24b4a'],['elevated','#ef9f27'],['monitor','#378add'],['seismic','#b077dd']].map(([label, color]) => (
+        {[['critical','#e24b4a'],['elevated','#ef9f27'],['monitor','#378add'],['seismic','#b077dd'],['aircraft','#ff6b35']].map(([label, color]) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
             <span style={{ fontSize: 8, color: '#3a4a58', textTransform: 'uppercase' }}>{label}</span>
