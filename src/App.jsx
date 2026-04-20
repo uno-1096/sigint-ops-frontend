@@ -17,10 +17,10 @@ export default function App() {
   const [sourcesOnline, setSourcesOnline] = useState(0)
   const [connected, setConnected]   = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [flyTo, setFlyTo]           = useState(null)
   const socketRef = useRef(null)
 
   useEffect(() => {
-    // Initial REST fetch
     fetch(`${API}/api/score`)
       .then(r => r.json())
       .then(d => {
@@ -44,7 +44,6 @@ export default function App() {
       .then(d => setIncidents(prev => [...prev, ...d]))
       .catch(console.error)
 
-    // WebSocket for live updates
     const socket = io(API, { transports: ['websocket', 'polling'] })
     socketRef.current = socket
 
@@ -52,10 +51,10 @@ export default function App() {
     socket.on('disconnect', () => setConnected(false))
 
     socket.on('state_update', (data) => {
-      if (data.feed_items)       setFeedItems(data.feed_items)
+      if (data.feed_items) setFeedItems(data.feed_items)
       if (data.escalation_score !== undefined) setScore(data.escalation_score)
       if (data.active_incidents !== undefined) setActiveInc(data.active_incidents)
-      if (data.incidents)  setIncidents([...data.incidents, ...(data.earthquakes || [])])
+      if (data.incidents) setIncidents([...data.incidents, ...(data.earthquakes || [])])
       setLastUpdate(new Date())
     })
 
@@ -73,8 +72,8 @@ export default function App() {
       />
       <div className="ops-body">
         <CinemaPanel />
-        <GlobeMap incidents={incidents} />
-        <IntelFeed items={feedItems} />
+        <GlobeMap incidents={incidents} flyTo={flyTo} />
+        <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
       </div>
       <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} />
     </div>

@@ -20,7 +20,21 @@ function timeAgo(published) {
   } catch { return '' }
 }
 
-export default function IntelFeed({ items }) {
+// Try to find a matching incident for a feed item by keyword
+function findMatch(item, incidents) {
+  if (!incidents || !incidents.length) return null
+  const text = (item.title + ' ' + (item.summary || '')).toLowerCase()
+  // Try to match by country code or keyword in incident title
+  for (const inc of incidents) {
+    const incText = (inc.title || '').toLowerCase()
+    // Check if any word >4 chars from inc title appears in feed item
+    const words = incText.split(/\s+/).filter(w => w.length > 4)
+    if (words.some(w => text.includes(w))) return inc
+  }
+  return null
+}
+
+export default function IntelFeed({ items, incidents, onFlyTo }) {
   const [filter, setFilter] = useState('ALL')
 
   const tabs = ['ALL','MIL','DIS','POL']
@@ -30,6 +44,19 @@ export default function IntelFeed({ items }) {
     ? items
     : items.filter(i => i.tags && i.tags.includes(filterMap[filter]))
 
+  const handleClick = (item) => {
+    if (item.lat && item.lon && onFlyTo) {
+      onFlyTo({ lat: item.lat, lon: item.lon, title: item.title })
+    } else {
+      const match = findMatch(item, incidents)
+      if (match && onFlyTo) {
+        onFlyTo({ lat: match.lat, lon: match.lon, title: match.title })
+      } else if (item.url) {
+        window.open(item.url, '_blank')
+      }
+    }
+  }
+
   return (
     <div className="panel">
       <div className="panel-header">
@@ -37,7 +64,6 @@ export default function IntelFeed({ items }) {
         <span className="panel-badge">{items.length} ITEMS</span>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1a2030', flexShrink: 0 }}>
         {tabs.map(t => (
           <div key={t} onClick={() => setFilter(t)} style={{
@@ -49,7 +75,6 @@ export default function IntelFeed({ items }) {
         ))}
       </div>
 
-      {/* Feed */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 5, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {filtered.length === 0 && (
           <div style={{ fontSize: 10, color: '#2a3545', textAlign: 'center', marginTop: 20 }}>
@@ -59,13 +84,15 @@ export default function IntelFeed({ items }) {
         {filtered.map((item, i) => {
           const tag = item.tags?.[0] || 'NEWS'
           const style = TAG_STYLES[tag] || TAG_STYLES.NEWS
+          const hasMatch = !!(item.lat && item.lon) || !!findMatch(item, incidents)
           return (
             <div key={i} style={{
-              background: '#07090d', border: '1px solid #131a22',
+              background: '#07090d',
+              border: '1px solid #131a22',
               borderRadius: 3, padding: '6px 8px', cursor: 'pointer',
               borderLeft: `2px solid ${style.border}`,
             }}
-              onClick={() => item.url && window.open(item.url, '_blank')}
+              onClick={() => handleClick(item)}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                 <span style={{ fontSize: 8, color: '#378add', letterSpacing: 0.5 }}>
@@ -78,13 +105,20 @@ export default function IntelFeed({ items }) {
               <div style={{ fontSize: 9, color: '#8a9aaa', lineHeight: 1.4, marginBottom: 4 }}>
                 {item.title}
               </div>
-              <span style={{
-                fontSize: 7, padding: '1px 5px', borderRadius: 2,
-                background: style.bg, color: style.color,
-                border: `1px solid ${style.border}`, letterSpacing: 0.5
-              }}>
-                {tag}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{
+                  fontSize: 7, padding: '1px 5px', borderRadius: 2,
+                  background: style.bg, color: style.color,
+                  border: `1px solid ${style.border}`, letterSpacing: 0.5
+                }}>
+                  {tag}
+                </span>
+                {hasMatch && (
+                  <span style={{ fontSize: 7, color: '#378add', letterSpacing: 0.5 }}>
+                    LOCATE
+                  </span>
+                )}
+              </div>
             </div>
           )
         })}
