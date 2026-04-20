@@ -1,0 +1,90 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #080a0d;
+  color: #c8cfd8;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+}
+
+.ops-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 5px;
+  gap: 5px;
+  background: #080a0d;
+}
+
+.ops-body {
+  display: grid;
+  grid-template-columns: 240px 1fr 210px;
+  gap: 5px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Shared panel styles ── */
+.panel {
+  background: #0d1117;
+  border: 1px solid #1e2530;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-bottom: 1px solid #1a2030;
+  flex-shrink: 0;
+}
+
+.panel-title {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #3a4a5a;
+  text-transform: uppercase;
+}
+
+.panel-badge {
+  font-size: 9px;
+  color: #378add;
+}
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e2530; border-radius: 2px; }
+
+/* ── Leaflet overrides ── */
+.leaflet-container {
+  background: #0a0d12 !important;
+  flex: 1;
+}
+
+.leaflet-tile {
+  filter: brightness(0.35) saturate(0.4) hue-rotate(180deg);
+}
+
+.leaflet-control-zoom a {
+  background: #0d1117 !important;
+  color: #4a6070 !important;
+  border-color: #1e2530 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #0d1117;
+  border: 1px solid #1e2530;
+  border-radius: 4px;
+  color: #c8cfd8;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.leaflet-popup-tip {
+  background: #0d1117;
+}
