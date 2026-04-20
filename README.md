@@ -1,16 +1,73 @@
-# React + Vite
+# SIGINT Ops — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Real-time global intelligence dashboard. Live at [ops.unocloud.us](https://ops.unocloud.us).
 
-Currently, two official plugins are available:
+A self-hosted open-source alternative to platforms like Monitor-the-Situation, SitDeck, and IranMonitor — built from scratch in one day.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+### 3D Globe
+- Cesium.js powered interactive globe with satellite imagery
+- Country, city, and street labels via CartoDB overlay
+- 100+ live incident pins (GDELT + USGS) color-coded by severity
+- Click any pin for incident details popup
+- Search bar — type any city/country and globe flies there
+- Aircraft, Naval, Weather layer tabs
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Intel Feed
+- Live news from 16+ sources including Reuters, AP, BBC, Al Jazeera, TASS
+- Auto-tagged by category: MILITARY, CRITICAL, DISASTER, POLITICAL
+- Click any feed item — globe flies to that location
+- Filter by category tabs
 
-## Expanding the ESLint configuration
+### Cinema Panel
+- HLS live streams: DW News, Al Jazeera, France 24, NASA TV, Euronews, Bloomberg
+- Auto-detects offline streams
+- Click to switch between feeds
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Header
+- Live escalation index 0-100 with color-coded alert level
+- Real-time UTC clock
+- WebSocket connection status
+- Active incident count
+
+### Bottom Bar
+- Escalation level and score
+- Active incident count
+- Sources online counter
+- Polymarket prediction markets link
+- IODA internet connectivity monitor link
+
+## Stack
+
+- React 18 + Vite
+- Cesium.js (3D globe)
+- HLS.js (live video streams)
+- Socket.IO client (WebSocket)
+- CartoDB tile layers
+
+## Running Locally
+
+```bash
+git clone https://github.com/uno-1096/sigint-ops-frontend
+cd sigint-ops-frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173
+
+## Build and Deploy
+
+```bash
+npm run build
+scp -r dist user@your-server:~/sigint-ops/frontend/
+```
+
+## Architecture
+
+## Related
+
+- [Backend Repository](https://github.com/uno-1096/sigint-ops-backend)
+- [Live Site](https://ops.unocloud.us)
+- [Infrastructure Repo](https://github.com/uno-1096/terraform-vpc-project)
