@@ -15,8 +15,10 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
   const mountRef   = useRef(null)
   const viewerRef  = useRef(null)
   const handlerRef = useRef(null)
+  const heatmapRef = useRef(null)
   const [layer, setLayer]   = useState('Globe')
   const [popup, setPopup]   = useState(null)
+  const [showHeat, setShowHeat] = useState(false)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -163,6 +165,58 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
     })
   }, [aircraft])
 
+
+  // Heatmap overlay
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer || viewer.isDestroyed()) return
+
+    // Remove old heatmap
+    if (heatmapRef.current) {
+      viewer.dataSources.remove(heatmapRef.current)
+      heatmapRef.current = null
+    }
+
+    if (!showHeat || !incidents.length) return
+
+    // Build grid — 20x10 degree cells
+    const grid = {}
+    incidents.forEach(inc => {
+      const gx = Math.floor(inc.lon / 30) * 30
+      const gy = Math.floor(inc.lat / 15) * 15
+      const key = `${gx},${gy}`
+      grid[key] = (grid[key] || 0) + 1
+    })
+
+    const max = Math.max(...Object.values(grid))
+    const ds  = new Cesium.CustomDataSource('heatmap')
+
+    Object.entries(grid).forEach(([key, count]) => {
+      const [gx, gy] = key.split(',').map(Number)
+      const intensity = count / max
+      const r = Math.round(intensity * 220)
+      const g = Math.round((1 - intensity) * 80)
+      const b = 20
+
+      ds.entities.add({
+        polygon: {
+          hierarchy: Cesium.Cartesian3.fromDegreesArray([
+            gx, gy, gx+30, gy, gx+30, gy+15, gx, gy+15
+          ]),
+          material: new Cesium.ColorMaterialProperty(
+            new Cesium.Color(r/255, g/255, b/255, 0.75)
+          ),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          classificationType: Cesium.ClassificationType.TERRAIN,
+        }
+      })
+    })
+
+    viewer.dataSources.add(ds)
+    heatmapRef.current = ds
+
+  }, [incidents, showHeat])
+
   // Fly to location when intel feed item clicked
   useEffect(() => {
     const viewer = viewerRef.current
@@ -196,7 +250,7 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
       }).catch(console.error)
   }
 
-  const tabs = ['Globe', 'Aircraft', 'Naval', 'Weather']
+  const tabs = ['Globe', 'Aircraft', 'Naval', 'Weather', 'HEAT']
 
   const tagColor = (inc) => SEV_COLORS[inc.type === 'earthquake' ? 'earthquake' : inc.severity] || SEV_COLORS.monitor
 
@@ -205,11 +259,11 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
       <div className="panel-header">
         <div style={{ display: 'flex', gap: 8 }}>
           {tabs.map((l) => (
-            <span key={l} onClick={() => setLayer(l)} style={{
+            <span key={l} onClick={() => l === 'HEAT' ? setShowHeat(h => !h) : setLayer(l)} style={{
               fontSize: 9, padding: '2px 7px', borderRadius: 2, cursor: 'pointer',
-              color: layer === l ? '#378add' : '#2a3a4a',
-              border: layer === l ? '1px solid #1e3a55' : '1px solid transparent',
-              background: layer === l ? '#0a1825' : 'transparent',
+              color: l === 'HEAT' ? (showHeat ? '#e24b4a' : '#5a3a3a') : (layer === l ? '#378add' : '#2a3a4a'),
+              border: l === 'HEAT' ? (showHeat ? '1px solid #a32d2d' : '1px solid #3a2020') : (layer === l ? '1px solid #1e3a55' : '1px solid transparent'),
+              background: l === 'HEAT' ? (showHeat ? '#1a0808' : 'transparent') : (layer === l ? '#0a1825' : 'transparent'),
             }}>{l}</span>
           ))}
         </div>
@@ -225,7 +279,20 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
               outline: 'none', fontFamily: 'Courier New'
             }}
           />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            onClick={() => setShowHeat(h => !h)}
+            style={{
+              fontSize: 8, padding: '2px 7px', borderRadius: 2, cursor: 'pointer',
+              color: showHeat ? '#e24b4a' : '#2a3a4a',
+              border: showHeat ? '1px solid #a32d2d' : '1px solid #1e2530',
+              background: showHeat ? '#1a0808' : 'transparent',
+              letterSpacing: '0.5px',
+            }}>
+            HEATMAP
+          </span>
           <span style={{ fontSize: 9, color: '#378add' }}>{incidents.length} PLOTTED</span>
+        </div>
         </div>
       </div>
 
