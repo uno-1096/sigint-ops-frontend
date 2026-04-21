@@ -34,7 +34,7 @@ function findMatch(item, incidents) {
   return null
 }
 
-export default function IntelFeed({ items, incidents, onFlyTo }) {
+export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
   const [filter, setFilter] = useState('ALL')
 
   const tabs = ['ALL','MIL','DIS','POL']
@@ -58,7 +58,7 @@ export default function IntelFeed({ items, incidents, onFlyTo }) {
   }
 
   return (
-    <div className="panel">
+    <div className="panel" style={compact ? { border: 'none', borderRadius: 0 } : {}}>
       <div className="panel-header">
         <span className="panel-title">Intel Feed</span>
         <span className="panel-badge">{items.length} ITEMS</span>

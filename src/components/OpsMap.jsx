@@ -37,6 +37,18 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
       selectionIndicator:    false,
       infoBox:               false,
       creditContainer:       document.createElement('div'),
+      contextOptions: {
+        webgl: {
+          alpha: false,
+          antialias: true,
+          preserveDrawingBuffer: true,
+          failIfMajorPerformanceCaveat: false,
+          depth: true,
+          stencil: false,
+          anisotropy: 1,
+          powerPreference: 'high-performance',
+        }
+      }
     })
 
     // Disable default click-to-fly behavior
