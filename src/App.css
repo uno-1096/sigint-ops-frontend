@@ -107,3 +107,15 @@ body {
     min-height: 300px;
   }
 }
+
+/* ── iOS mobile fixes ── */
+@supports (-webkit-touch-callout: none) {
+  .ops-root {
+    height: -webkit-fill-available;
+  }
+}
+
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
