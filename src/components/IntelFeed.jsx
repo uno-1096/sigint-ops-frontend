@@ -94,10 +94,23 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
             }}
               onClick={() => handleClick(item)}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                <span style={{ fontSize: 8, color: '#378add', letterSpacing: 0.5 }}>
-                  {item.source}
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontSize: 8, color: '#378add', letterSpacing: 0.5 }}>
+                    {item.source}
+                  </span>
+                  {item.bias && (
+                    <span style={{
+                      fontSize: 7, padding: '1px 4px', borderRadius: 2,
+                      background: item.bias.color + '22',
+                      color: item.bias.color,
+                      border: '1px solid ' + item.bias.color + '55',
+                      letterSpacing: 0.5, fontWeight: 'bold'
+                    }}>
+                      {item.bias.label}
+                    </span>
+                  )}
+                </div>
                 <span style={{ fontSize: 8, color: '#1e2f40' }}>
                   {timeAgo(item.published)}
                 </span>
