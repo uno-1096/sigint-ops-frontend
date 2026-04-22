@@ -102,6 +102,12 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
                   {timeAgo(item.published)}
                 </span>
               </div>
+              {item.image && (
+                <img src={item.image} alt="" style={{
+                  width: '100%', height: 60, objectFit: 'cover',
+                  borderRadius: 2, marginBottom: 4, opacity: 0.85
+                }} onError={e => e.target.style.display='none'} />
+              )}
               <div style={{ fontSize: 9, color: '#8a9aaa', lineHeight: 1.4, marginBottom: 4 }}>
                 {item.title}
               </div>
