@@ -12,6 +12,7 @@ import ThemeToggle from './components/ThemeToggle'
 import TimelinePanel from './components/TimelinePanel'
 import CountryProfile from './components/CountryProfile'
 import { exportPDF } from './utils/pdfExport'
+import WatchList from './components/WatchList'
 import './App.css'
 
 const API = 'https://ops.unocloud.us'
@@ -128,6 +129,7 @@ export default function App() {
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <AlertSystem feedItems={feedItems} />
       <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
+      <WatchList feedItems={feedItems} incidents={incidents} />
               <IntelFeed items={feedItems} incidents={incidents} onFlyTo={handleFlyTo} />
             </div>
           )}
@@ -181,10 +183,11 @@ export default function App() {
       <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
       <AlertSystem feedItems={feedItems} />
       <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
+      <WatchList feedItems={feedItems} incidents={incidents} />
       <div className="ops-body">
         <CinemaPanel />
         <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
-        <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
+        <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} onSave={(item) => { const saved = JSON.parse(localStorage.getItem('sigint-watchlist') || '[]'); localStorage.setItem('sigint-watchlist', JSON.stringify([{...item, id: Date.now(), savedAt: new Date().toISOString()}, ...saved].slice(0,50))) }} />
       </div>
       <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} feedItems={feedItems} brief={brief} />
     </div>

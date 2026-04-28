@@ -36,6 +36,14 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
   const viewerRef  = useRef(null)
   const handlerRef    = useRef(null)
   const strategicRef  = useRef([])
+  const weatherRef    = useRef([])
+
+  useEffect(() => {
+    fetch('https://ops.unocloud.us/api/weather')
+      .then(r => r.json())
+      .then(data => { weatherRef.current = data })
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     fetch('https://ops.unocloud.us/api/strategic')
@@ -265,6 +273,27 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
     if (!viewer || viewer.isDestroyed()) return
 
     viewer.entities.removeAll()
+
+    if (layer === 'Weather') {
+      weatherRef.current.forEach(w => {
+        if (!w.lat || !w.lon) return
+        const color = w.type === 'disaster' ? '#e24b4a' : '#ef9f27'
+        viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(w.lon, w.lat, 0),
+          point: {
+            pixelSize: 12,
+            color: Cesium.Color.fromCssColorString(color),
+            outlineColor: Cesium.Color.fromCssColorString(color).withAlpha(0.3),
+            outlineWidth: 6,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          name: w.title,
+          description: '<div style="background:#0d1117;color:#c8cfd8;padding:10px;font-family:Courier New;border-left:3px solid ' + color + '">' +
+            '<b style="color:' + color + '">' + (w.type || 'WEATHER').toUpperCase() + '</b><br/>' +
+            w.title + '<br/><span style="color:#4a6070">' + (w.source || '') + '</span></div>',
+        })
+      })
+    }
 
     if (layer === 'INTEL') {
       // Plot strategic locations

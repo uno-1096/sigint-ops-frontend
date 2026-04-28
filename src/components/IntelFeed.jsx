@@ -34,7 +34,7 @@ function findMatch(item, incidents) {
   return null
 }
 
-export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
+export default function IntelFeed({ items, incidents, onFlyTo, compact, onSave }) {
   const [filter, setFilter] = useState('ALL')
 
   const tabs = ['ALL','MIL','DIS','POL']
@@ -178,6 +178,12 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
                 }}>
                   {tag}
                 </span>
+                {onSave && (
+                  <span onClick={e => { e.stopPropagation(); onSave(item) }}
+                    style={{ fontSize: 9, color: '#2a3545', cursor: 'pointer' }} title="Save to watchlist">
+                    🔖
+                  </span>
+                )}
                 {hasMatch && (
                   <span style={{ fontSize: 7, color: '#378add', letterSpacing: 0.5 }}>
                     LOCATE
