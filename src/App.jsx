@@ -16,7 +16,7 @@ import WatchList from './components/WatchList'
 import './App.css'
 
 const API = 'https://ops.unocloud.us'
-const isMobile = () => window.innerWidth < 768
+const isMobile = () => window.innerWidth < 1024 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
 export default function App() {
   const [incidents, setIncidents]         = useState([])
@@ -32,6 +32,7 @@ export default function App() {
   const [briefUpdated, setBriefUpdated]   = useState(null)
   const [mobile, setMobile]               = useState(isMobile())
   const [mobileTab, setMobileTab]         = useState('globe')
+  const [darkMode, setDarkMode]           = useState(true)
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -127,17 +128,17 @@ export default function App() {
 
           {mobileTab === 'feed' && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <AlertSystem feedItems={feedItems} />
-      <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
-      <WatchList feedItems={feedItems} incidents={incidents} />
+              {!mobile && <AlertSystem feedItems={feedItems} />}
+      {!mobile && <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />}
+      {!mobile && <WatchList feedItems={feedItems} incidents={incidents} />}
               <IntelFeed items={feedItems} incidents={incidents} onFlyTo={handleFlyTo} />
             </div>
           )}
 
           {mobileTab === 'brief' && (
             <div style={{ height: '100%', overflowY: 'auto', padding: 10 }}>
-              <TimelinePanel score={score} />
-      <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
+              {!mobile && <TimelinePanel score={score} />}
+      {!mobile && <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />}
             </div>
           )}
 
@@ -179,11 +180,11 @@ export default function App() {
   return (
     <div className="ops-root">
       <Header score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} connected={connected} lastUpdate={lastUpdate} />
-      <TimelinePanel score={score} />
-      <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
-      <AlertSystem feedItems={feedItems} />
-      <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
-      <WatchList feedItems={feedItems} incidents={incidents} />
+      {!mobile && <TimelinePanel score={score} />}
+      {!mobile && <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />}
+      {!mobile && <AlertSystem feedItems={feedItems} />}
+      {!mobile && <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />}
+      {!mobile && <WatchList feedItems={feedItems} incidents={incidents} />}
       <div className="ops-body">
         <CinemaPanel />
         <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
