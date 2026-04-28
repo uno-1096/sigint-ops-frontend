@@ -57,6 +57,21 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
     }
   }
 
+  const [customRss, setCustomRss] = useState('')
+  const [customFeeds, setCustomFeeds] = useState([])
+
+  const addCustomRss = (e) => {
+    if (e.key === 'Enter' && customRss.trim()) {
+      const url = customRss.trim()
+      if (!customFeeds.includes(url)) {
+        const next = [...customFeeds, url]
+        setCustomFeeds(next)
+        localStorage.setItem('sigint-custom-rss', JSON.stringify(next))
+      }
+      setCustomRss('')
+    }
+  }
+
   return (
     <div className="panel" style={compact ? { border: 'none', borderRadius: 0 } : {}}>
       <div className="panel-header">
@@ -75,6 +90,21 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
         ))}
       </div>
 
+      {!compact && (
+        <div style={{ padding: '3px 5px', borderBottom: '1px solid #1a2030', display: 'flex', gap: 3 }}>
+          <input
+            value={customRss}
+            onChange={e => setCustomRss(e.target.value)}
+            onKeyDown={addCustomRss}
+            placeholder="+ Add RSS feed URL..."
+            style={{
+              flex: 1, background: '#060809', border: '1px solid #1e2530',
+              borderRadius: 2, color: '#c8cfd8', fontSize: 8,
+              padding: '2px 6px', outline: 'none', fontFamily: 'Courier New'
+            }}
+          />
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: 'auto', padding: 5, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {filtered.length === 0 && (
           <div style={{ fontSize: 10, color: '#2a3545', textAlign: 'center', marginTop: 20 }}>

@@ -179,7 +179,7 @@ export default function App() {
         <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
         <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
       </div>
-      <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} />
+      <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} feedItems={feedItems} />
     </div>
   )
 }
