@@ -9,6 +9,9 @@ import BottomBar from './components/BottomBar'
 import BriefPanel from './components/BriefPanel'
 import AlertSystem from './components/AlertSystem'
 import ThemeToggle from './components/ThemeToggle'
+import TimelinePanel from './components/TimelinePanel'
+import CountryProfile from './components/CountryProfile'
+import { exportPDF } from './utils/pdfExport'
 import './App.css'
 
 const API = 'https://ops.unocloud.us'
@@ -124,13 +127,15 @@ export default function App() {
           {mobileTab === 'feed' && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <AlertSystem feedItems={feedItems} />
+      <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
               <IntelFeed items={feedItems} incidents={incidents} onFlyTo={handleFlyTo} />
             </div>
           )}
 
           {mobileTab === 'brief' && (
             <div style={{ height: '100%', overflowY: 'auto', padding: 10 }}>
-              <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
+              <TimelinePanel score={score} />
+      <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
             </div>
           )}
 
@@ -172,14 +177,16 @@ export default function App() {
   return (
     <div className="ops-root">
       <Header score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} connected={connected} lastUpdate={lastUpdate} />
+      <TimelinePanel score={score} />
       <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
       <AlertSystem feedItems={feedItems} />
+      <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
       <div className="ops-body">
         <CinemaPanel />
         <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
         <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} />
       </div>
-      <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} feedItems={feedItems} />
+      <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} feedItems={feedItems} brief={brief} />
     </div>
   )
 }

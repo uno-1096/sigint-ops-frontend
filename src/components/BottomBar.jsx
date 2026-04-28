@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { exportPDF } from '../utils/pdfExport'
 
-function NewsTicket({ items }) {
+function NewsTicker({ items }) {
   const ref = useRef(null)
-
   useEffect(() => {
     const el = ref.current
     if (!el) return
     let pos = 0
-    const speed = 0.5
     const tick = () => {
-      pos -= speed
+      pos -= 0.5
       if (pos < -el.scrollWidth / 2) pos = 0
       el.style.transform = 'translateX(' + pos + 'px)'
       requestAnimationFrame(tick)
@@ -17,20 +16,13 @@ function NewsTicket({ items }) {
     const id = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(id)
   }, [items])
-
   const doubled = [...items, ...items]
-
   return (
     <div style={{ overflow: 'hidden', flex: 1, display: 'flex', alignItems: 'center' }}>
       <div ref={ref} style={{ display: 'flex', gap: 40, whiteSpace: 'nowrap', willChange: 'transform' }}>
         {doubled.map((item, i) => (
           <span key={i} style={{ fontSize: 9, fontFamily: 'Courier New' }}>
-            <span style={{
-              color: item.severity === 'critical' ? '#e24b4a' : item.severity === 'elevated' ? '#ef9f27' : '#378add',
-              marginRight: 6, fontWeight: 'bold'
-            }}>
-              [{item.source}]
-            </span>
+            <span style={{ color: item.severity === 'critical' ? '#e24b4a' : '#ef9f27', marginRight: 6, fontWeight: 'bold' }}>[{item.source}]</span>
             <span style={{ color: '#8a9aaa' }}>{item.title}</span>
             <span style={{ color: '#1e2f40', margin: '0 20px' }}>◆</span>
           </span>
@@ -40,26 +32,22 @@ function NewsTicket({ items }) {
   )
 }
 
-export default function BottomBar({ score, activeInc, sourcesOnline, feedItems }) {
+export default function BottomBar({ score, activeInc, sourcesOnline, feedItems, brief }) {
   const [muted, setMuted] = useState(false)
   const prevScore = useRef(score)
-  const audioRef = useRef(null)
 
   const exportData = () => {
-    fetch('https://ops.unocloud.us/api/feed')
-      .then(r => r.json())
-      .then(data => {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-        const url  = URL.createObjectURL(blob)
-        const a    = document.createElement('a')
-        a.href     = url
-        a.download = 'sigint-ops-export-' + new Date().toISOString().slice(0,10) + '.json'
-        a.click()
-        URL.revokeObjectURL(url)
-      })
+    fetch('https://ops.unocloud.us/api/feed').then(r => r.json()).then(data => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'sigint-ops-' + new Date().toISOString().slice(0,10) + '.json'
+      a.click()
+      URL.revokeObjectURL(url)
+    })
   }
 
-  // Alert sound on escalation spike
   useEffect(() => {
     if (muted) return
     if (score >= 80 && prevScore.current < 80) {
@@ -86,58 +74,28 @@ export default function BottomBar({ score, activeInc, sourcesOnline, feedItems }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
-      {/* News ticker */}
       {feedItems && feedItems.length > 0 && (
-        <div style={{
-          background: '#0a0d12', border: '1px solid #1e2530', borderRadius: 4,
-          padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden'
-        }}>
-          <span style={{ fontSize: 8, color: '#e24b4a', fontWeight: 'bold', letterSpacing: 1, flexShrink: 0, fontFamily: 'Courier New' }}>
-            ◉ LIVE
-          </span>
-          <NewsTicket items={feedItems.slice(0, 15)} />
-          <span
-            onClick={() => setMuted(m => !m)}
-            style={{ fontSize: 10, cursor: 'pointer', flexShrink: 0, color: muted ? '#3a4a58' : '#97c459' }}
-            title={muted ? 'Unmute alerts' : 'Mute alerts'}
-          >{muted ? '🔇' : '🔊'}</span>
+        <div style={{ background: '#0a0d12', border: '1px solid #1e2530', borderRadius: 4, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+          <span style={{ fontSize: 8, color: '#e24b4a', fontWeight: 'bold', letterSpacing: 1, flexShrink: 0, fontFamily: 'Courier New' }}>◉ LIVE</span>
+          <NewsTicker items={feedItems.slice(0, 15)} />
+          <span onClick={() => setMuted(m => !m)} style={{ fontSize: 10, cursor: 'pointer', flexShrink: 0, color: muted ? '#3a4a58' : '#97c459' }}>{muted ? '🔇' : '🔊'}</span>
         </div>
       )}
-
-      {/* Metrics bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 5 }}>
-        <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>Escalation</div>
-            <div style={{ fontSize: 8, color: '#3a4a58' }}>Score: {score}/100</div>
+        {[
+          { label: 'Escalation', sub: 'Score: ' + score + '/100', value: getLevel(score), color: getColor(score) },
+          { label: 'Incidents',  sub: 'GDELT + USGS', value: activeInc, color: '#ef9f27' },
+          { label: 'Sources',    sub: 'RSS / OSINT',  value: sourcesOnline, color: '#97c459' },
+          { label: 'Refresh',    sub: 'Auto-polling', value: '20s', color: '#378add' },
+        ].map((m, i) => (
+          <div key={i} style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>{m.label}</div>
+              <div style={{ fontSize: 8, color: '#3a4a58' }}>{m.sub}</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 'bold', color: m.color }}>{m.value}</div>
           </div>
-          <div style={{ fontSize: 14, fontWeight: 'bold', color: getColor(score) }}>{getLevel(score)}</div>
-        </div>
-
-        <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>Incidents</div>
-            <div style={{ fontSize: 8, color: '#3a4a58' }}>GDELT + USGS</div>
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#ef9f27' }}>{activeInc}</div>
-        </div>
-
-        <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>Sources</div>
-            <div style={{ fontSize: 8, color: '#3a4a58' }}>RSS / OSINT</div>
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#97c459' }}>{sourcesOnline}</div>
-        </div>
-
-        <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>Refresh</div>
-            <div style={{ fontSize: 8, color: '#3a4a58' }}>Auto-polling</div>
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#378add' }}>20s</div>
-        </div>
-
+        ))}
         <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
           onClick={() => window.open('https://polymarket.com/markets/politics', '_blank')}>
           <div>
@@ -146,14 +104,15 @@ export default function BottomBar({ score, activeInc, sourcesOnline, feedItems }
           </div>
           <div style={{ fontSize: 12, fontWeight: 'bold', color: '#afa9ec' }}>POLY</div>
         </div>
-
-        <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-          onClick={exportData}>
+        <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, padding: '5px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 8, color: '#2a3a4a', letterSpacing: 1, textTransform: 'uppercase' }}>Export</div>
-            <div style={{ fontSize: 8, color: '#3a4a58' }}>Download JSON</div>
+            <div style={{ fontSize: 8, color: '#3a4a58' }}>Report</div>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 'bold', color: '#5dcaa5' }}>⬇</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <span onClick={exportData} style={{ fontSize: 12, color: '#5dcaa5', cursor: 'pointer' }} title="JSON">⬇</span>
+            <span onClick={() => exportPDF(brief, feedItems, score, activeInc)} style={{ fontSize: 12, color: '#afa9ec', cursor: 'pointer' }} title="PDF">📄</span>
+          </div>
         </div>
       </div>
     </div>
