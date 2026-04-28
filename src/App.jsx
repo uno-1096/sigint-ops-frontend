@@ -8,6 +8,7 @@ import Header from './components/Header'
 import BottomBar from './components/BottomBar'
 import BriefPanel from './components/BriefPanel'
 import AlertSystem from './components/AlertSystem'
+import ThemeToggle from './components/ThemeToggle'
 import './App.css'
 
 const API = 'https://ops.unocloud.us'
@@ -103,6 +104,7 @@ export default function App() {
               {getAlertLabel(score)}
             </span>
             <span style={{ fontSize: 18, fontWeight: 'bold', color: getScoreColor(score) }}>{score}</span>
+            <ThemeToggle onTheme={setDarkMode} />
           </div>
         </div>
 

@@ -11,10 +11,38 @@ const SEV_COLORS = {
   earthquake: '#b077dd',
 }
 
+function addStrategicPin(viewer, loc) {
+  const colors = { nuclear: '#e24b4a', military: '#ef9f27', chokepoint: '#b077dd' }
+  const color = colors[loc.type] || '#378add'
+  viewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(loc.lon, loc.lat, 0),
+    point: {
+      pixelSize: loc.type === 'nuclear' ? 14 : 10,
+      color: Cesium.Color.fromCssColorString(color),
+      outlineColor: Cesium.Color.fromCssColorString(color).withAlpha(0.4),
+      outlineWidth: 8,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+    name: loc.name,
+    description: '<div style="background:#0d1117;color:#c8cfd8;padding:10px;font-family:Courier New;border-left:3px solid ' + color + ';min-width:200px">' +
+      '<b style="color:' + color + '">' + loc.type.toUpperCase() + '</b><br/>' +
+      '<b>' + loc.name + '</b><br/>' +
+      '<span style="color:#4a6070">' + loc.country + '</span></div>',
+  })
+}
+
 export default function GlobeMap({ incidents, aircraft, flyTo }) {
   const mountRef   = useRef(null)
   const viewerRef  = useRef(null)
-  const handlerRef = useRef(null)
+  const handlerRef    = useRef(null)
+  const strategicRef  = useRef([])
+
+  useEffect(() => {
+    fetch('https://ops.unocloud.us/api/strategic')
+      .then(r => r.json())
+      .then(data => { strategicRef.current = data })
+      .catch(console.error)
+  }, [])
   const heatmapRef = useRef(null)
   const [layer, setLayer]   = useState('Globe')
   const [popup, setPopup]   = useState(null)
@@ -189,6 +217,8 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
       heatmapRef.current = null
     }
 
+
+
     if (!showHeat || !incidents.length) return
 
     // Build grid — 20x10 degree cells
@@ -229,6 +259,30 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
 
   }, [incidents, showHeat])
 
+  // Handle layer switching
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer || viewer.isDestroyed()) return
+
+    viewer.entities.removeAll()
+
+    if (layer === 'INTEL') {
+      // Plot strategic locations
+      const locs = strategicRef.current
+      if (!locs || !locs.length) {
+        // Fetch if not loaded yet
+        fetch('https://ops.unocloud.us/api/strategic')
+          .then(r => r.json())
+          .then(data => {
+            strategicRef.current = data
+            data.forEach(loc => addStrategicPin(viewer, loc))
+          })
+      } else {
+        locs.forEach(loc => addStrategicPin(viewer, loc))
+      }
+    }
+  }, [layer])
+
   // Fly to location when intel feed item clicked
   useEffect(() => {
     const viewer = viewerRef.current
@@ -262,7 +316,7 @@ export default function GlobeMap({ incidents, aircraft, flyTo }) {
       }).catch(console.error)
   }
 
-  const tabs = ['Globe', 'Aircraft', 'Naval', 'Weather', 'HEAT']
+  const tabs = ['Globe', 'Aircraft', 'Naval', 'Weather', 'HEAT', 'INTEL']
 
   const tagColor = (inc) => SEV_COLORS[inc.type === 'earthquake' ? 'earthquake' : inc.severity] || SEV_COLORS.monitor
 

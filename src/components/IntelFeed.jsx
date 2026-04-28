@@ -110,6 +110,17 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
                       {item.bias.label}
                     </span>
                   )}
+                  {item.confidence && (
+                    <span style={{
+                      fontSize: 7, padding: '1px 4px', borderRadius: 2,
+                      background: item.confidence.color + '22',
+                      color: item.confidence.color,
+                      border: '1px solid ' + item.confidence.color + '55',
+                      letterSpacing: 0.5
+                    }}>
+                      {item.confidence.score}%
+                    </span>
+                  )}
                 </div>
                 <span style={{ fontSize: 8, color: '#1e2f40' }}>
                   {timeAgo(item.published)}
@@ -124,6 +135,11 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact }) {
               <div style={{ fontSize: 9, color: '#8a9aaa', lineHeight: 1.4, marginBottom: 4 }}>
                 {item.title}
               </div>
+              {item.coverage_count > 1 && (
+                <div style={{ fontSize: 8, color: '#5dcaa5', marginBottom: 3 }}>
+                  {item.coverage_count} sources covering — {item.coverage_sources && item.coverage_sources.join(', ')}
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{
                   fontSize: 7, padding: '1px 5px', borderRadius: 2,

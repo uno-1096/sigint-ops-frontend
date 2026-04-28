@@ -119,3 +119,16 @@ html, body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ── Light mode ── */
+body.light {
+  background: #f0f2f5;
+  color: #1a2030;
+}
+body.light .panel {
+  background: #ffffff;
+  border-color: #d0d8e4;
+}
+body.light .ops-root {
+  background: #f0f2f5;
+}

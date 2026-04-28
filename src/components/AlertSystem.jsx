@@ -3,7 +3,12 @@ import { useState, useEffect, useRef } from 'react'
 const DEFAULT_KEYWORDS = ['iran', 'nuclear', 'missile', 'attack', 'strike', 'war']
 
 export default function AlertSystem({ feedItems }) {
-  const [keywords, setKeywords] = useState(DEFAULT_KEYWORDS)
+  const [keywords, setKeywords] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sigint-keywords')
+      return saved ? JSON.parse(saved) : DEFAULT_KEYWORDS
+    } catch { return DEFAULT_KEYWORDS }
+  })
   const [input, setInput] = useState('')
   const [alerts, setAlerts] = useState([])
   const [expanded, setExpanded] = useState(false)
@@ -44,12 +49,20 @@ export default function AlertSystem({ feedItems }) {
   const addKeyword = (e) => {
     if (e.key === 'Enter' && input.trim()) {
       const kw = input.trim().toLowerCase()
-      if (!keywords.includes(kw)) setKeywords(prev => [...prev, kw])
+      if (!keywords.includes(kw)) {
+        const next = [...keywords, kw]
+        setKeywords(next)
+        localStorage.setItem('sigint-keywords', JSON.stringify(next))
+      }
       setInput('')
     }
   }
 
-  const removeKeyword = (kw) => setKeywords(prev => prev.filter(k => k !== kw))
+  const removeKeyword = (kw) => {
+    const next = keywords.filter(k => k !== kw)
+    setKeywords(next)
+    localStorage.setItem('sigint-keywords', JSON.stringify(next))
+  }
   const clearAlerts = () => { setAlerts([]); seenRef.current.clear() }
 
   const getSevColor = (sev) => {
