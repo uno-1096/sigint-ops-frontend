@@ -13,6 +13,7 @@ import TimelinePanel from './components/TimelinePanel'
 import CountryProfile from './components/CountryProfile'
 import { exportPDF } from './utils/pdfExport'
 import WatchList from './components/WatchList'
+import PredictionPanel from './components/PredictionPanel'
 import './App.css'
 
 const API = 'https://ops.unocloud.us'
@@ -181,6 +182,7 @@ export default function App() {
     <div className="ops-root">
       <Header score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} connected={connected} lastUpdate={lastUpdate} />
       {!mobile && <TimelinePanel score={score} />}
+      {!mobile && <PredictionPanel score={score} />}
       {!mobile && <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />}
       {!mobile && <AlertSystem feedItems={feedItems} />}
       {!mobile && <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />}
