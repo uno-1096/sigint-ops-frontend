@@ -1,96 +1,60 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function BriefPanel({ brief, briefUpdated, score }) {
   const [expanded, setExpanded] = useState(true)
-  const [sections, setSections] = useState({})
 
-  useEffect(() => {
-    if (!brief) return
-    const parsed = {}
-    const lines = brief.split('\n')
-    let current = null
-    lines.forEach(line => {
-      if (['EXECUTIVE SUMMARY','KEY DEVELOPMENTS','REGIONAL HOTSPOTS','ANALYST NOTE'].includes(line.trim())) {
-        current = line.trim()
-        parsed[current] = []
-      } else if (current && line.trim()) {
-        parsed[current].push(line.trim())
-      }
+  const getScoreColor = (s) => s >= 80 ? '#e24b4a' : s >= 60 ? '#ef9f27' : s >= 40 ? '#97c459' : '#378add'
+
+  const formatBrief = (text) => {
+    if (!text) return null
+    // Clean markdown bold markers
+    const lines = text.split('\n').map(l => l.replace(/\*\*/g, '').trim()).filter(l => l)
+    return lines.map((line, i) => {
+      const isSectionHeader = /^[1-5]\./.test(line) || 
+        /^(EXECUTIVE SUMMARY|KEY DEVELOPMENTS|REGIONAL|THREAT ASSESSMENT|ANALYST NOTE|SITUATION REPORT|DTG|CLASSIFICATION)/i.test(line)
+      return (
+        <div key={i} style={{
+          fontSize: isSectionHeader ? 9 : 8,
+          color: isSectionHeader ? '#378add' : '#8a9aaa',
+          fontWeight: isSectionHeader ? 'bold' : 'normal',
+          letterSpacing: isSectionHeader ? 1 : 0,
+          marginTop: isSectionHeader ? 8 : 2,
+          lineHeight: 1.5,
+          borderLeft: isSectionHeader ? '2px solid #1e3a55' : 'none',
+          paddingLeft: isSectionHeader ? 6 : 0,
+        }}>
+          {line}
+        </div>
+      )
     })
-    setSections(parsed)
-  }, [brief])
-
-  const getScoreColor = (s) => {
-    if (s >= 80) return '#e24b4a'
-    if (s >= 60) return '#ef9f27'
-    if (s >= 40) return '#97c459'
-    return '#378add'
-  }
-
-  const formatTime = (iso) => {
-    if (!iso) return ''
-    try {
-      return new Date(iso).toUTCString().slice(0,25)
-    } catch { return '' }
   }
 
   return (
-    <div style={{
-      background: '#0d1117',
-      border: '1px solid #1e2530',
-      borderLeft: `3px solid ${getScoreColor(score)}`,
-      borderRadius: 4,
-      marginBottom: 5,
-      flexShrink: 0,
-    }}>
-      <div
-        onClick={() => setExpanded(!expanded)}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '6px 12px', cursor: 'pointer',
-        }}
-      >
+    <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, marginBottom: 5, flexShrink: 0 }}>
+      <div onClick={() => setExpanded(!expanded)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 12px', cursor: 'pointer' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 9, color: getScoreColor(score), letterSpacing: 1.5, fontWeight: 'bold' }}>
-            SITREP
-          </span>
-          <span style={{ fontSize: 8, color: '#2a3a4a' }}>
-            {formatTime(briefUpdated)}
-          </span>
+          <span style={{ fontSize: 9, color: '#3a4a5a', letterSpacing: 1.5, fontWeight: 'bold' }}>SITREP</span>
+          {briefUpdated && (
+            <span style={{ fontSize: 7, color: '#2a3545' }}>
+              {new Date(briefUpdated).toUTCString().slice(0, 22)}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 9, color: '#3a4a58' }}>AI ANALYSIS</span>
+          <span style={{ fontSize: 8, padding: '1px 6px', borderRadius: 2, background: getScoreColor(score) + '22', color: getScoreColor(score), border: '1px solid ' + getScoreColor(score) + '55' }}>
+            {score >= 80 ? 'CRITICAL' : score >= 60 ? 'ELEVATED' : 'MODERATE'}
+          </span>
           <span style={{ fontSize: 10, color: '#2a3a4a' }}>{expanded ? '▲' : '▼'}</span>
         </div>
       </div>
 
       {expanded && (
-        <div style={{
-          padding: '0 12px 10px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 10,
-          borderTop: '1px solid #1a2030',
-        }}>
-          {Object.entries(sections).map(([title, lines]) => (
-            <div key={title} style={{ paddingTop: 8 }}>
-              <div style={{
-                fontSize: 8, color: '#2a3545', letterSpacing: 1,
-                textTransform: 'uppercase', marginBottom: 4, fontWeight: 'bold'
-              }}>
-                {title}
-              </div>
-              {lines.map((line, i) => (
-                <div key={i} style={{
-                  fontSize: 9, color: line.startsWith('•') ? '#8a9aaa' : '#c8cfd8',
-                  lineHeight: 1.5,
-                  paddingLeft: line.startsWith('•') ? 4 : 0,
-                }}>
-                  {line}
-                </div>
-              ))}
+        <div style={{ borderTop: '1px solid #1a2030', padding: '8px 12px', maxHeight: 220, overflowY: 'auto', fontFamily: 'Courier New' }}>
+          {brief ? formatBrief(brief) : (
+            <div style={{ fontSize: 8, color: '#2a3545', textAlign: 'center', padding: 12 }}>
+              Generating intelligence brief...
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
