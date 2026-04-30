@@ -14,6 +14,7 @@ import CountryProfile from './components/CountryProfile'
 import { exportPDF } from './utils/pdfExport'
 import WatchList from './components/WatchList'
 import PredictionPanel from './components/PredictionPanel'
+import SatellitePanel from './components/SatellitePanel'
 import './App.css'
 
 const API = 'https://ops.unocloud.us'
@@ -34,6 +35,7 @@ export default function App() {
   const [mobile, setMobile]               = useState(isMobile())
   const [mobileTab, setMobileTab]         = useState('globe')
   const [darkMode, setDarkMode]           = useState(true)
+  const [satelliteInc, setSatelliteInc]   = useState(null)
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -190,8 +192,9 @@ export default function App() {
       <div className="ops-body">
         <CinemaPanel />
         <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
-        <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} onSave={(item) => { const saved = JSON.parse(localStorage.getItem('sigint-watchlist') || '[]'); localStorage.setItem('sigint-watchlist', JSON.stringify([{...item, id: Date.now(), savedAt: new Date().toISOString()}, ...saved].slice(0,50))) }} />
+        <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} onSatellite={setSatelliteInc} onSave={(item) => { const saved = JSON.parse(localStorage.getItem('sigint-watchlist') || '[]'); localStorage.setItem('sigint-watchlist', JSON.stringify([{...item, id: Date.now(), savedAt: new Date().toISOString()}, ...saved].slice(0,50))) }} />
       </div>
+      {satelliteInc && <SatellitePanel incident={satelliteInc} onClose={() => setSatelliteInc(null)} />}
       <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} feedItems={feedItems} brief={brief} />
     </div>
   )
