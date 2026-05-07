@@ -1,95 +1,98 @@
 import { useEffect, useState } from 'react'
 
 const API = 'https://ops.unocloud.us'
+const getColor = (s) => s >= 80 ? 'var(--critical)' : s >= 60 ? 'var(--elevated)' : s >= 40 ? 'var(--moderate)' : 'var(--low)'
+const getRawColor = (s) => s >= 80 ? '#ff2d55' : s >= 60 ? '#ff9f0a' : s >= 40 ? '#30d158' : '#0a84ff'
+
+const formatTime = (iso) => {
+  try { return new Date(iso).toUTCString().slice(17, 22) + 'Z' }
+  catch { return '' }
+}
 
 export default function TimelinePanel({ score }) {
   const [history, setHistory] = useState([])
   const [expanded, setExpanded] = useState(false)
+  const [hovered, setHovered] = useState(null)
 
   useEffect(() => {
-    fetch(`${API}/api/history`)
-      .then(r => r.json())
-      .then(setHistory)
-      .catch(console.error)
-
-    const interval = setInterval(() => {
-      fetch(`${API}/api/history`)
-        .then(r => r.json())
-        .then(setHistory)
-        .catch(console.error)
-    }, 30000)
-    return () => clearInterval(interval)
+    const load = () =>
+      fetch(`${API}/api/history`).then(r => r.json()).then(setHistory).catch(console.error)
+    load()
+    const id = setInterval(load, 30000)
+    return () => clearInterval(id)
   }, [])
 
-  const getColor = (s) => s >= 80 ? '#e24b4a' : s >= 60 ? '#ef9f27' : s >= 40 ? '#97c459' : '#378add'
-
-  const formatTime = (iso) => {
-    try {
-      const d = new Date(iso)
-      return d.toUTCString().slice(17, 22) + ' UTC'
-    } catch { return '' }
-  }
-
-  const max = Math.max(...history.map(h => h.score), 1)
-  const w = 100 / Math.max(history.length, 1)
+  const recent = history.slice(-60)
 
   return (
-    <div style={{
-      background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4,
-      marginBottom: 5, flexShrink: 0
-    }}>
-      <div onClick={() => setExpanded(!expanded)} style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '5px 12px', cursor: 'pointer'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 9, color: '#3a4a5a', letterSpacing: 1.5, fontWeight: 'bold' }}>
-            THREAT TIMELINE
+    <div className="collapse-row">
+      <div className="collapse-header" onClick={() => setExpanded(!expanded)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="collapse-title">Threat Timeline</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-dim)' }}>
+            {history.length} snapshots
           </span>
-          <span style={{ fontSize: 8, color: '#2a3545' }}>{history.length} snapshots</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 8, color: '#2a3545' }}>24H HISTORY</span>
-          <span style={{ fontSize: 10, color: '#2a3a4a' }}>{expanded ? '▲' : '▼'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 600, letterSpacing: 1, color: 'var(--text-dim)' }}>24H</span>
+          <span style={{ fontSize: 9, color: 'var(--text-dim)', display: 'inline-block', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform var(--t-fast)' }}>▾</span>
         </div>
       </div>
 
-      {/* Sparkline always visible */}
-      <div style={{ padding: '0 12px 6px', display: 'flex', alignItems: 'flex-end', gap: 1, height: 32 }}>
-        {history.slice(-60).map((h, i) => (
+      {/* Sparkline — always visible */}
+      <div style={{ padding: '6px 14px 8px', display: 'flex', alignItems: 'flex-end', gap: 2, height: 40, position: 'relative' }}>
+        {recent.map((h, i) => (
           <div
             key={i}
-            title={`${formatTime(h.ts)} — Score: ${h.score}`}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+            title={`${formatTime(h.ts)} — ${h.score}`}
             style={{
               flex: 1, minWidth: 2,
-              height: `${(h.score / 100) * 28}px`,
-              background: getColor(h.score),
-              opacity: 0.7,
-              borderRadius: '1px 1px 0 0',
-              cursor: 'pointer',
+              height: `${Math.max(3, (h.score / 100) * 32)}px`,
+              background: getRawColor(h.score),
+              borderRadius: '2px 2px 0 0',
+              opacity: hovered === i ? 1 : 0.6,
+              boxShadow: hovered === i ? `0 0 6px ${getRawColor(h.score)}` : 'none',
+              transform: hovered === i ? 'scaleY(1.1)' : 'scaleY(1)',
+              transformOrigin: 'bottom',
+              cursor: 'default',
+              transition: 'opacity var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast)',
             }}
           />
         ))}
+        {hovered !== null && recent[hovered] && (
+          <div style={{
+            position: 'absolute', top: 2, left: 14,
+            fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 600,
+            color: getRawColor(recent[hovered].score),
+            background: 'var(--bg-panel)', padding: '2px 6px', borderRadius: 4,
+            border: '1px solid var(--border)', pointerEvents: 'none',
+          }}>
+            {formatTime(recent[hovered].ts)} · {recent[hovered].score}
+          </div>
+        )}
       </div>
 
       {expanded && (
-        <div style={{ borderTop: '1px solid #1a2030', padding: '8px 12px', maxHeight: 200, overflowY: 'auto' }}>
+        <div style={{ borderTop: '1px solid var(--border)', padding: '8px 14px', maxHeight: 200, overflowY: 'auto', animation: 'fadeSlideIn var(--t-mid) var(--ease-snap)' }}>
           {[...history].reverse().slice(0, 20).map((h, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '4px 0', borderBottom: '1px solid #0a1020'
+              padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.03)',
             }}>
-              <span style={{ fontSize: 8, color: '#2a3545', width: 65, flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-dim)', width: 56, flexShrink: 0 }}>
                 {formatTime(h.ts)}
               </span>
               <div style={{
-                width: 30, height: 6, borderRadius: 1,
-                background: getColor(h.score), opacity: 0.8
+                width: 28, height: 4, borderRadius: 2,
+                background: getRawColor(h.score),
+                boxShadow: `0 0 4px ${getRawColor(h.score)}88`,
               }} />
-              <span style={{ fontSize: 9, color: getColor(h.score), width: 25, flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: getColor(h.score), width: 24, flexShrink: 0 }}>
                 {h.score}
               </span>
-              <span style={{ fontSize: 8, color: '#4a5a68', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 8, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {h.top_headlines?.[0]?.title || ''}
               </span>
             </div>

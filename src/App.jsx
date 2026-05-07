@@ -80,10 +80,10 @@ export default function App() {
   }, [])
 
   const getScoreColor = (s) => {
-    if (s >= 80) return '#e24b4a'
-    if (s >= 60) return '#ef9f27'
-    if (s >= 40) return '#97c459'
-    return '#378add'
+    if (s >= 80) return '#ff2d55'
+    if (s >= 60) return '#ff9f0a'
+    if (s >= 40) return '#30d158'
+    return '#0a84ff'
   }
 
   const getAlertLabel = (s) => {
@@ -99,31 +99,54 @@ export default function App() {
   }
 
   if (mobile) {
+    const alertColor = getScoreColor(score)
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#080a0d', overflow: 'hidden', fontFamily: 'Courier New' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-root)', overflow: 'hidden', fontFamily: 'var(--font-sans)' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0d1117', borderBottom: '1px solid #1e2530', padding: '8px 14px', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: connected ? '#97c459' : '#e24b4a' }} />
-            <span style={{ fontSize: 13, fontWeight: 'bold', color: '#e0e6ed', letterSpacing: 2 }}>SIGINT OPS</span>
+        {/* Mobile header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'var(--bg-panel)',
+          backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
+          borderBottom: '1px solid var(--glass-border)',
+          padding: '10px 16px', flexShrink: 0,
+          boxShadow: '0 2px 20px rgba(0,0,0,0.4)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: connected ? 'var(--moderate)' : 'var(--critical)',
+              boxShadow: connected ? '0 0 8px rgba(48,209,88,0.6)' : '0 0 8px rgba(255,45,85,0.6)',
+              animation: 'pulseScale 2s ease-in-out infinite',
+            }} />
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: 3 }}>
+              SIGINT OPS
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 3, background: '#1a0808', color: getScoreColor(score), border: `1px solid ${getScoreColor(score)}55`, fontWeight: 'bold', letterSpacing: 1 }}>
+            <span style={{
+              fontFamily: 'var(--font-sans)', fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
+              padding: '3px 10px', borderRadius: 5,
+              color: alertColor, background: alertColor + '18',
+              border: `1px solid ${alertColor}45`,
+            }}>
               {getAlertLabel(score)}
             </span>
-            <span style={{ fontSize: 18, fontWeight: 'bold', color: getScoreColor(score) }}>{score}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700, color: alertColor }}>
+              {score}
+            </span>
             <ThemeToggle onTheme={setDarkMode} />
           </div>
         </div>
 
+        {/* Tab content */}
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-
           {mobileTab === 'globe' && (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ height: '50%', flexShrink: 0 }}>
+              <div style={{ height: '52%', flexShrink: 0 }}>
                 <MobileMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid #1e2530' }}>
+              <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid var(--border)' }}>
                 <IntelFeed items={feedItems} incidents={incidents} onFlyTo={(loc) => setFlyTo(loc)} compact={true} />
               </div>
             </div>
@@ -131,49 +154,62 @@ export default function App() {
 
           {mobileTab === 'feed' && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {!mobile && <AlertSystem feedItems={feedItems} />}
-      {!mobile && <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />}
-      {!mobile && <WatchList feedItems={feedItems} incidents={incidents} />}
               <IntelFeed items={feedItems} incidents={incidents} onFlyTo={handleFlyTo} />
             </div>
           )}
 
           {mobileTab === 'brief' && (
             <div style={{ height: '100%', overflowY: 'auto', padding: 10 }}>
-              {!mobile && <TimelinePanel score={score} />}
-      {!mobile && <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />}
+              <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
+              <PredictionPanel score={score} />
+              <TimelinePanel score={score} />
             </div>
           )}
 
           {mobileTab === 'cinema' && (
             <CinemaPanel />
           )}
-
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: '#0d1117', borderTop: '1px solid #1e2530', flexShrink: 0 }}>
+        {/* Bottom tab bar */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+          background: 'var(--bg-panel)',
+          backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
+          borderTop: '1px solid var(--glass-border)',
+          flexShrink: 0,
+        }}>
           {[
             { id: 'globe',  icon: '🌍', label: 'Globe' },
             { id: 'feed',   icon: '📡', label: 'Feed' },
             { id: 'brief',  icon: '📋', label: 'Brief' },
             { id: 'cinema', icon: '📺', label: 'Cinema' },
-          ].map(tab => (
-            <div
-              key={tab.id}
-              onClick={() => setMobileTab(tab.id)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                padding: '10px 0', cursor: 'pointer',
-                borderTop: mobileTab === tab.id ? `2px solid ${getScoreColor(score)}` : '2px solid transparent',
-                background: mobileTab === tab.id ? '#0a1020' : 'transparent',
-              }}
-            >
-              <span style={{ fontSize: 18 }}>{tab.icon}</span>
-              <span style={{ fontSize: 9, letterSpacing: 1, color: mobileTab === tab.id ? getScoreColor(score) : '#3a4a58', marginTop: 2 }}>
-                {tab.label}
-              </span>
-            </div>
-          ))}
+          ].map(tab => {
+            const isActive = mobileTab === tab.id
+            return (
+              <div
+                key={tab.id}
+                onClick={() => setMobileTab(tab.id)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '10px 0', cursor: 'pointer',
+                  borderTop: isActive ? `2px solid ${alertColor}` : '2px solid transparent',
+                  background: isActive ? alertColor + '0d' : 'transparent',
+                  transition: 'background var(--t-mid)',
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{tab.icon}</span>
+                <span style={{
+                  fontFamily: 'var(--font-sans)', fontSize: 9, fontWeight: 600,
+                  letterSpacing: 1, marginTop: 3,
+                  color: isActive ? alertColor : 'var(--text-dim)',
+                  transition: 'color var(--t-mid)',
+                }}>
+                  {tab.label}
+                </span>
+              </div>
+            )
+          })}
         </div>
 
       </div>
@@ -188,7 +224,7 @@ export default function App() {
       {!mobile && <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />}
       {!mobile && <AlertSystem feedItems={feedItems} />}
       {!mobile && <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />}
-      {!mobile && <WatchList feedItems={feedItems} incidents={incidents} />}
+      {!mobile && <WatchList />}
       <div className="ops-body">
         <CinemaPanel />
         <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />

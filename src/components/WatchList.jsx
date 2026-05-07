@@ -1,26 +1,27 @@
 import { useState, useEffect } from 'react'
 
-export default function WatchList({ feedItems, incidents }) {
+const getSevColor = (s) => s === 'critical' ? 'var(--critical)' : s === 'elevated' ? 'var(--elevated)' : 'var(--blue)'
+
+const formatTime = (iso) => {
+  try { return new Date(iso).toUTCString().slice(5, 22) }
+  catch { return '' }
+}
+
+export default function WatchList() {
   const [saved, setSaved] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sigint-watchlist') || '[]') }
     catch { return [] }
   })
   const [expanded, setExpanded] = useState(false)
 
-  const saveItem = (item) => {
-    const entry = {
-      id: Date.now(),
-      title: item.title,
-      source: item.source,
-      url: item.url,
-      severity: item.severity,
-      savedAt: new Date().toISOString(),
-      type: item.type || 'news'
+  useEffect(() => {
+    const sync = () => {
+      try { setSaved(JSON.parse(localStorage.getItem('sigint-watchlist') || '[]')) }
+      catch {}
     }
-    const next = [entry, ...saved].slice(0, 50)
-    setSaved(next)
-    localStorage.setItem('sigint-watchlist', JSON.stringify(next))
-  }
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [])
 
   const removeItem = (id) => {
     const next = saved.filter(s => s.id !== id)
@@ -28,47 +29,64 @@ export default function WatchList({ feedItems, incidents }) {
     localStorage.setItem('sigint-watchlist', JSON.stringify(next))
   }
 
-  const getSevColor = (s) => s === 'critical' ? '#e24b4a' : s === 'elevated' ? '#ef9f27' : '#378add'
-
-  const formatTime = (iso) => {
-    try { return new Date(iso).toUTCString().slice(0, 22) }
-    catch { return '' }
-  }
-
   return (
-    <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 4, marginBottom: 5, flexShrink: 0 }}>
-      <div onClick={() => setExpanded(!expanded)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 12px', cursor: 'pointer' }}>
+    <div className="collapse-row">
+      <div className="collapse-header" onClick={() => setExpanded(!expanded)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 9, color: '#3a4a5a', letterSpacing: 1.5, fontWeight: 'bold' }}>WATCHLIST</span>
+          <span className="collapse-title">Watchlist</span>
           {saved.length > 0 && (
-            <span style={{ fontSize: 8, background: '#0a1825', color: '#378add', border: '1px solid #1e3a55', borderRadius: 2, padding: '1px 5px' }}>
-              {saved.length} SAVED
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
+              padding: '1px 6px', borderRadius: 3,
+              background: 'rgba(10,132,255,0.12)', color: 'var(--blue)',
+              border: '1px solid rgba(10,132,255,0.3)',
+            }}>
+              {saved.length}
             </span>
           )}
         </div>
-        <span style={{ fontSize: 10, color: '#2a3a4a' }}>{expanded ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 9, color: 'var(--text-dim)', display: 'inline-block', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform var(--t-fast)' }}>▾</span>
       </div>
 
       {expanded && (
-        <div style={{ borderTop: '1px solid #1a2030', maxHeight: 200, overflowY: 'auto' }}>
-          {saved.length === 0 && (
-            <div style={{ padding: '12px', fontSize: 9, color: '#2a3545', textAlign: 'center' }}>
+        <div style={{ borderTop: '1px solid var(--border)', maxHeight: 200, overflowY: 'auto', animation: 'fadeSlideIn var(--t-mid) var(--ease-snap)' }}>
+          {saved.length === 0 ? (
+            <div style={{ padding: '14px', fontFamily: 'var(--font-sans)', fontSize: 9, color: 'var(--text-dim)', textAlign: 'center' }}>
               No saved items — bookmark feed items to track them
             </div>
-          )}
-          {saved.map(item => (
-            <div key={item.id} style={{ padding: '6px 12px', borderBottom: '1px solid #0a1020', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          ) : saved.map(item => (
+            <div
+              key={item.id}
+              style={{
+                padding: '7px 14px', borderBottom: '1px solid rgba(255,255,255,0.025)',
+                display: 'flex', gap: 10, alignItems: 'flex-start',
+                transition: 'background var(--t-fast)',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 2 }}>
-                  <span style={{ fontSize: 7, color: getSevColor(item.severity), fontWeight: 'bold' }}>{item.source}</span>
-                  <span style={{ fontSize: 7, color: '#2a3545' }}>{formatTime(item.savedAt)}</span>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 600, color: getSevColor(item.severity) }}>
+                    {item.source}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--text-dim)' }}>
+                    {formatTime(item.savedAt)}
+                  </span>
                 </div>
-                <div onClick={() => item.url && window.open(item.url, '_blank')}
-                  style={{ fontSize: 9, color: '#8a9aaa', cursor: 'pointer', lineHeight: 1.4 }}>
+                <div
+                  onClick={() => item.url && window.open(item.url, '_blank')}
+                  style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: 'var(--text-secondary)', cursor: 'pointer', lineHeight: 1.4 }}
+                >
                   {item.title}
                 </div>
               </div>
-              <span onClick={() => removeItem(item.id)} style={{ fontSize: 10, color: '#3a4a58', cursor: 'pointer', flexShrink: 0 }}>✕</span>
+              <span
+                onClick={() => removeItem(item.id)}
+                style={{ fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', flexShrink: 0, transition: 'color var(--t-fast)' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--critical)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
+              >✕</span>
             </div>
           ))}
         </div>
