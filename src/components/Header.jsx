@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react'
 
-function getAlert(score) {
-  if (score >= 80) return { label: 'CRITICAL', color: 'var(--critical)', glow: 'var(--shadow-glow-red)' }
-  if (score >= 60) return { label: 'ELEVATED', color: 'var(--elevated)', glow: '0 0 12px rgba(255,159,10,0.35)' }
-  if (score >= 40) return { label: 'MODERATE', color: 'var(--moderate)', glow: '0 0 12px rgba(48,209,88,0.3)' }
-  return { label: 'LOW', color: 'var(--low)', glow: 'var(--shadow-glow-blue)' }
+function threatMeta(score) {
+  if (score >= 80) return { label: 'CRITICAL', color: 'var(--t7)', glow: '0 0 14px rgba(196,75,42,0.45)' }
+  if (score >= 60) return { label: 'ELEVATED', color: 'var(--t5)', glow: '0 0 14px rgba(196,132,42,0.4)' }
+  if (score >= 40) return { label: 'MODERATE', color: 'var(--t3)', glow: '0 0 14px rgba(74,138,196,0.35)' }
+  return               { label: 'LOW',      color: 'var(--t1)', glow: '0 0 14px rgba(74,158,106,0.3)' }
 }
 
-const SEG_COLORS = [
-  '#1a6e2e','#1e8035','#d67f10','#d67f10',
-  '#c84030','#c84030','#ff2d55','#ff2d55','#ff2d55','#ff2d55',
+const SEG = [
+  'var(--t1)','var(--t1)','var(--t1)',
+  'var(--t3)','var(--t3)',
+  'var(--t5)','var(--t5)',
+  'var(--t7)','var(--t7)','var(--t7)',
 ]
 
 export default function Header({ score, activeInc, sourcesOnline, connected, lastUpdate }) {
-  const [time, setTime] = useState('')
+  const [time, setTime]       = useState('')
   const [history, setHistory] = useState([])
-  const alert = getAlert(score)
+  const threat = threatMeta(score)
 
   useEffect(() => {
     if (score > 0) setHistory(prev => [...prev.slice(-29), score])
@@ -23,11 +25,9 @@ export default function Header({ score, activeInc, sourcesOnline, connected, las
 
   useEffect(() => {
     const tick = () => {
-      const now = new Date()
-      const h = String(now.getUTCHours()).padStart(2, '0')
-      const m = String(now.getUTCMinutes()).padStart(2, '0')
-      const s = String(now.getUTCSeconds()).padStart(2, '0')
-      setTime(`${h}:${m}:${s}Z`)
+      const n = new Date()
+      const pad = v => String(v).padStart(2, '0')
+      setTime(`${pad(n.getUTCHours())}:${pad(n.getUTCMinutes())}:${pad(n.getUTCSeconds())}Z`)
     }
     tick()
     const id = setInterval(tick, 1000)
@@ -37,106 +37,131 @@ export default function Header({ score, activeInc, sourcesOnline, connected, las
   const filled = Math.round((score / 100) * 10)
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'var(--bg-panel)',
-      backdropFilter: 'var(--glass-blur)',
-      WebkitBackdropFilter: 'var(--glass-blur)',
-      border: '1px solid var(--glass-border)',
-      borderRadius: 8,
-      padding: '0 16px',
+    <header style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      background: 'var(--bg-1)',
+      border: '1px solid var(--seam)',
+      borderRadius: 6,
+      padding: '0 20px',
       height: 52,
       flexShrink: 0,
       boxShadow: 'var(--shadow-panel)',
     }}>
 
-      {/* LEFT — brand + status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: connected ? 'var(--moderate)' : 'var(--critical)',
-            boxShadow: connected ? '0 0 8px rgba(48,209,88,0.6)' : '0 0 8px rgba(255,45,85,0.6)',
-            animation: 'pulseScale 2s ease-in-out infinite',
+      {/* LEFT — wordmark + live dot + threat badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <span style={{
+            width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+            background: connected ? 'var(--pulse)' : 'var(--t7)',
+            boxShadow: connected
+              ? '0 0 0 2px rgba(61,191,184,0.18), 0 0 8px rgba(61,191,184,0.55)'
+              : '0 0 0 2px rgba(196,75,42,0.2), 0 0 8px rgba(196,75,42,0.5)',
+            animation: 'pulseScale 2.4s ease-in-out infinite',
           }} />
           <span style={{
-            fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700,
-            color: 'var(--text-primary)', letterSpacing: 3,
-          }}>SIGINT OPS</span>
+            fontFamily: 'var(--font-data)',
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '0.22em',
+            color: 'var(--ivory)',
+          }}>
+            SIGINT OPS
+          </span>
         </div>
 
         <div style={{
-          fontSize: 8, fontWeight: 700, letterSpacing: 1.5,
-          padding: '3px 10px', borderRadius: 5,
-          color: alert.color,
-          background: alert.color + '18',
-          border: `1px solid ${alert.color}45`,
-          boxShadow: alert.glow,
-          transition: 'all 0.4s var(--ease-smooth)',
+          fontFamily: 'var(--font-data)',
+          fontSize: 8,
+          fontWeight: 500,
+          letterSpacing: '0.18em',
+          padding: '3px 10px',
+          borderRadius: 3,
+          color: threat.color,
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid',
+          borderColor: threat.color,
+          boxShadow: threat.glow,
+          transition: 'color 300ms, border-color 300ms, box-shadow 300ms',
         }}>
-          {alert.label}
+          {threat.label}
         </div>
       </div>
 
-      {/* CENTER — escalation meter */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+      {/* CENTER — score + meter + sparkline */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, zIndex: 1 }}>
+        {/* Score numeral */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 600, letterSpacing: 2, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Escalation Index
+          <span style={{
+            fontFamily: 'var(--font-data)',
+            fontSize: 8,
+            fontWeight: 400,
+            letterSpacing: '0.2em',
+            color: 'var(--ivory-3)',
+            textTransform: 'uppercase',
+          }}>
+            Escalation
           </span>
           <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 26, fontWeight: 700,
-            color: alert.color, lineHeight: 1,
-            textShadow: alert.glow,
-            transition: 'color 0.4s var(--ease-smooth)',
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 30,
+            fontWeight: 300,
+            lineHeight: 1,
+            color: threat.color,
+            textShadow: threat.glow,
+            transition: `color ${300}ms`,
           }}>
             {score}
           </span>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+        {/* Segmented meter */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', gap: 2 }}>
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} style={{
-                width: 22, height: 5, borderRadius: 2,
-                background: i < filled ? SEG_COLORS[i] : 'rgba(255,255,255,0.05)',
-                boxShadow: i < filled ? `0 0 6px ${SEG_COLORS[i]}88` : 'none',
-                transition: 'background 0.3s var(--ease-smooth), box-shadow 0.3s',
+                width: 20,
+                height: 4,
+                borderRadius: 1,
+                background: i < filled ? SEG[i] : 'rgba(255,255,255,0.04)',
+                boxShadow: i < filled ? `0 0 5px ${SEG[i]}99` : 'none',
+                transition: 'background 0.28s, box-shadow 0.28s',
               }} />
             ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 7, color: 'var(--text-dim)', letterSpacing: 1 }}>LOW</span>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 7, color: 'var(--text-dim)', letterSpacing: 1 }}>CRITICAL</span>
+            <span style={{ fontFamily: 'var(--font-data)', fontSize: 7, color: 'var(--ivory-3)', letterSpacing: '0.1em' }}>LOW</span>
+            <span style={{ fontFamily: 'var(--font-data)', fontSize: 7, color: 'var(--ivory-3)', letterSpacing: '0.1em' }}>CRITICAL</span>
           </div>
         </div>
 
         {/* Sparkline */}
-        <svg width="90" height="32" style={{ opacity: 0.75, overflow: 'visible' }}>
+        <svg width="88" height="30" style={{ opacity: 0.8, overflow: 'visible', flexShrink: 0 }}>
           <defs>
-            <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={alert.color} stopOpacity="0.3" />
-              <stop offset="100%" stopColor={alert.color} stopOpacity="0" />
+            <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={threat.color} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={threat.color} stopOpacity="0" />
             </linearGradient>
           </defs>
           {history.length > 1 && (() => {
             const pts = history.map((v, i) => {
-              const x = (i / (history.length - 1)) * 90
-              const y = 30 - (v / 100) * 28
-              return `${x},${y}`
+              const x = (i / (history.length - 1)) * 88
+              const y = 28 - (v / 100) * 26
+              return [x, y]
             })
-            const fillPath = `M${pts.join('L')}L90,32L0,32Z`
+            const d = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ')
+            const fill = `${d} L88,30 L0,30 Z`
             return (
               <>
-                <path d={fillPath} fill="url(#sparkFill)" />
-                {history.map((v, i) => {
-                  if (i === 0) return null
-                  const x1 = ((i - 1) / (history.length - 1)) * 90
-                  const x2 = (i / (history.length - 1)) * 90
-                  const y1 = 30 - (history[i - 1] / 100) * 28
-                  const y2 = 30 - (v / 100) * 28
-                  const col = v >= 80 ? 'var(--critical)' : v >= 60 ? 'var(--elevated)' : 'var(--moderate)'
-                  return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={col} strokeWidth="1.5" strokeLinecap="round" />
+                <path d={fill} fill="url(#spark-fill)" />
+                {pts.slice(1).map(([x2, y2], i) => {
+                  const [x1, y1] = pts[i]
+                  const v = history[i + 1]
+                  const c = v >= 80 ? 'var(--t7)' : v >= 60 ? 'var(--t5)' : v >= 40 ? 'var(--t3)' : 'var(--t1)'
+                  return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeWidth="1.5" strokeLinecap="round" />
                 })}
               </>
             )
@@ -144,30 +169,47 @@ export default function Header({ score, activeInc, sourcesOnline, connected, las
         </svg>
       </div>
 
-      {/* RIGHT — stats + clock */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <Stat label="Incidents" value={activeInc} color="var(--elevated)" />
-        <Stat label="Sources" value={`${sourcesOnline}/43`} color="var(--green)" />
-        <Stat label="WebSocket" value={connected ? 'LIVE' : 'OFF'} color={connected ? 'var(--green)' : 'var(--critical)'} />
+      {/* RIGHT — stat pills + clock */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, zIndex: 1 }}>
+        <Stat label="Incidents" value={activeInc}           color="var(--t5)" />
+        <Stat label="Sources"   value={`${sourcesOnline}/43`} color="var(--pulse)" />
+        <Stat label="Socket"    value={connected ? 'LIVE' : 'OFF'} color={connected ? 'var(--pulse)' : 'var(--t7)'} />
+
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500,
-          color: 'var(--text-secondary)', letterSpacing: 1.5,
-          borderLeft: '1px solid var(--border)', paddingLeft: 16,
+          fontFamily: 'var(--font-data)',
+          fontSize: 11,
+          fontWeight: 300,
+          letterSpacing: '0.12em',
+          color: 'var(--ivory-2)',
+          borderLeft: '1px solid var(--seam)',
+          paddingLeft: 18,
         }}>
           {time}
         </div>
       </div>
-    </div>
+    </header>
   )
 }
 
 function Stat({ label, value, color }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 600, letterSpacing: 1.5, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <span style={{
+        fontFamily: 'var(--font-data)',
+        fontSize: 7,
+        fontWeight: 400,
+        letterSpacing: '0.18em',
+        color: 'var(--ivory-3)',
+        textTransform: 'uppercase',
+      }}>
         {label}
       </span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color }}>
+      <span style={{
+        fontFamily: 'var(--font-data)',
+        fontSize: 12,
+        fontWeight: 500,
+        color,
+      }}>
         {value}
       </span>
     </div>

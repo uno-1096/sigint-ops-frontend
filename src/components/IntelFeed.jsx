@@ -1,19 +1,19 @@
 import { useState } from 'react'
 
 const TAG_META = {
-  CRITICAL:   { bg: 'rgba(255,45,85,0.12)',   color: '#ff2d55', border: 'rgba(255,45,85,0.4)' },
-  MILITARY:   { bg: 'rgba(191,90,242,0.12)',  color: '#bf5af2', border: 'rgba(191,90,242,0.4)' },
-  DISASTER:   { bg: 'rgba(48,209,88,0.10)',   color: '#30d158', border: 'rgba(48,209,88,0.35)' },
-  POLITICAL:  { bg: 'rgba(255,159,10,0.12)',  color: '#ff9f0a', border: 'rgba(255,159,10,0.4)' },
-  NEWS:       { bg: 'rgba(10,132,255,0.10)',  color: '#0a84ff', border: 'rgba(10,132,255,0.35)' },
-  PREDICTION: { bg: 'rgba(50,173,230,0.10)',  color: '#32ade6', border: 'rgba(50,173,230,0.35)' },
+  CRITICAL:   { color: 'var(--t7)',     rgb: '196,75,42' },
+  MILITARY:   { color: 'var(--bronze)', rgb: '168,118,58' },
+  DISASTER:   { color: 'var(--t5)',     rgb: '196,132,42' },
+  POLITICAL:  { color: 'var(--t3)',     rgb: '74,138,196' },
+  NEWS:       { color: 'var(--ivory-2)',rgb: '184,180,170' },
+  PREDICTION: { color: 'var(--pulse)',  rgb: '61,191,184' },
 }
 
 function timeAgo(published) {
   if (!published) return ''
   try {
     const diff = Math.floor((Date.now() - new Date(published)) / 60000)
-    if (diff < 1) return 'just now'
+    if (diff < 1) return 'now'
     if (diff < 60) return `${diff}m`
     return `${Math.floor(diff / 60)}h`
   } catch { return '' }
@@ -30,17 +30,20 @@ function findMatch(item, incidents) {
 }
 
 const TABS = [
-  { id: 'ALL', label: 'All' },
-  { id: 'MIL', label: 'Mil' },
-  { id: 'DIS', label: 'Dis' },
-  { id: 'POL', label: 'Pol' },
+  { id: 'ALL', label: 'ALL' },
+  { id: 'MIL', label: 'MIL' },
+  { id: 'DIS', label: 'DIS' },
+  { id: 'POL', label: 'POL' },
 ]
 const FILTER_MAP = { ALL: null, MIL: 'MILITARY', DIS: 'DISASTER', POL: 'POLITICAL' }
 
-export default function IntelFeed({ items, incidents, onFlyTo, compact, onSave, onSatellite }) {
-  const [filter, setFilter] = useState('ALL')
+export default function IntelFeed({ items = [], incidents, onFlyTo, compact, onSave, onSatellite }) {
+  console.log('[IntelFeed] render — items.length:', items.length, '| first item:', items[0] ?? null)
+
+  const [filter, setFilter]   = useState('ALL')
   const [customRss, setCustomRss] = useState('')
   const [hoveredIdx, setHoveredIdx] = useState(null)
+  const [pressedBtn, setPressedBtn] = useState(null)
 
   const filtered = filter === 'ALL' ? items : items.filter(i => i.tags?.includes(FILTER_MAP[filter]))
 
@@ -58,170 +61,354 @@ export default function IntelFeed({ items, incidents, onFlyTo, compact, onSave, 
     if (e.key === 'Enter' && customRss.trim()) {
       const saved = JSON.parse(localStorage.getItem('sigint-custom-rss') || '[]')
       if (!saved.includes(customRss.trim())) {
-        const next = [...saved, customRss.trim()]
-        localStorage.setItem('sigint-custom-rss', JSON.stringify(next))
+        localStorage.setItem('sigint-custom-rss', JSON.stringify([...saved, customRss.trim()]))
       }
       setCustomRss('')
     }
   }
 
   return (
-    <div className="panel" style={compact ? { border: 'none', borderRadius: 0 } : {}}>
-      {/* Header */}
-      <div className="panel-header">
-        <span className="panel-title">Intel Feed</span>
-        <span className="panel-badge">{items.length} items</span>
+    <div
+      className="panel"
+      style={{
+        background: 'var(--bg-1)',
+        border: '1px solid var(--seam)',
+        ...(compact ? { border: 'none', borderRadius: 0 } : { flex: 1, minHeight: 0 }),
+      }}
+    >
+      {/* Panel header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '7px 12px',
+        borderBottom: '1px solid var(--seam)',
+        background: 'var(--bg-0)',
+        flexShrink: 0,
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-data)',
+          fontSize: 9, fontWeight: 500, letterSpacing: '0.2em',
+          color: 'var(--ivory-3)', textTransform: 'uppercase',
+        }}>
+          Intel Feed
+        </span>
+        <span style={{
+          fontFamily: 'var(--font-data)',
+          fontSize: 9, fontWeight: 400, color: 'var(--bronze)',
+        }}>
+          {items.length}
+        </span>
       </div>
 
       {/* Filter tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'rgba(0,0,0,0.12)' }}>
-        {TABS.map(t => (
-          <div
-            key={t.id}
-            onClick={() => setFilter(t.id)}
-            className={`tab-pill${filter === t.id ? ' active' : ''}`}
-          >
-            {t.label}
-          </div>
-        ))}
+      <div style={{
+        display: 'flex',
+        borderBottom: '1px solid var(--seam)',
+        background: 'var(--bg-0)',
+        flexShrink: 0,
+      }}>
+        {TABS.map(t => {
+          const active = filter === t.id
+          return (
+            <button
+              key={t.id}
+              onClick={() => setFilter(t.id)}
+              style={{
+                flex: 1,
+                fontFamily: 'var(--font-data)',
+                fontSize: 8, fontWeight: active ? 500 : 400,
+                letterSpacing: '0.15em',
+                padding: '6px 4px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: active ? '2px solid var(--bronze)' : '2px solid transparent',
+                color: active ? 'var(--bronze)' : 'var(--ivory-3)',
+                transition: 'color 180ms, border-color 180ms',
+                boxShadow: active ? 'var(--shadow-btn-rest)' : 'none',
+              }}
+            >
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* RSS input */}
       {!compact && (
-        <div style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'rgba(0,0,0,0.1)' }}>
+        <div style={{
+          padding: '5px 8px',
+          borderBottom: '1px solid var(--seam)',
+          background: 'var(--bg-0)',
+          flexShrink: 0,
+        }}>
           <input
             value={customRss}
             onChange={e => setCustomRss(e.target.value)}
             onKeyDown={addCustomRss}
-            placeholder="+ Add RSS feed URL…"
+            placeholder="+ RSS feed URL…"
             style={{
-              width: '100%', background: 'rgba(0,0,0,0.3)',
-              border: '1px solid var(--border)',
-              borderRadius: 4, color: 'var(--text-secondary)',
-              fontSize: 9, padding: '4px 8px', outline: 'none',
-              fontFamily: 'var(--font-mono)',
-              transition: 'border-color var(--t-fast)',
+              width: '100%',
+              background: 'transparent',
+              border: '1px solid var(--seam)',
+              borderRadius: 3,
+              color: 'var(--ivory-3)',
+              fontSize: 9,
+              padding: '4px 8px',
+              outline: 'none',
+              fontFamily: 'var(--font-data)',
+              transition: 'border-color 180ms',
             }}
-            onFocus={e => e.target.style.borderColor = 'var(--border-glow)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            onFocus={e => e.target.style.borderColor = 'var(--bronze)'}
+            onBlur={e => e.target.style.borderColor = 'var(--seam)'}
           />
         </div>
       )}
 
       {/* Feed list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <div style={{
+        flex: 1, overflowY: 'auto',
+        padding: '5px',
+        display: 'flex', flexDirection: 'column', gap: 2,
+      }}>
         {filtered.length === 0 && (
-          <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', marginTop: 28 }}>
-            Awaiting feed…
+          <div style={{
+            fontFamily: 'var(--font-data)', fontSize: 9,
+            color: 'var(--ivory-3)', textAlign: 'center', marginTop: 32,
+            letterSpacing: '0.15em',
+          }}>
+            AWAITING FEED
           </div>
         )}
+
         {filtered.map((item, i) => {
-          const tag = item.tags?.[0] || 'NEWS'
-          const meta = TAG_META[tag] || TAG_META.NEWS
-          const hasMatch = !!(item.lat && item.lon) || !!findMatch(item, incidents)
-          const isHov = hoveredIdx === i
+          const tag    = item.tags?.[0] || 'NEWS'
+          const meta   = TAG_META[tag] || TAG_META.NEWS
+          const hasGeo = !!(item.lat && item.lon) || !!findMatch(item, incidents)
+          const isHov  = hoveredIdx === i
 
           return (
             <div
               key={i}
-              className="feed-card"
+              onClick={() => handleClick(item)}
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}
-              onClick={() => handleClick(item)}
               style={{
-                borderLeft: `2px solid ${meta.border}`,
-                background: isHov ? 'var(--bg-hover)' : 'var(--bg-card)',
+                background: isHov ? 'var(--bg-2)' : '#1C1C25',
+                border: `1px solid ${isHov ? meta.color : 'var(--seam)'}`,
+                borderLeft: `3px solid ${meta.color}`,
+                borderRadius: 4,
+                cursor: 'pointer',
+                transition: 'background 180ms, border-color 180ms',
+                overflow: 'hidden',
+                flexShrink: 0,
               }}
             >
-              {/* Top row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                  <span style={{
-                    fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 600,
-                    letterSpacing: 0.5, color: 'var(--blue)',
-                  }}>
-                    {item.source}
-                  </span>
-                  {item.bias && (
-                    <span className="tag" style={{ background: item.bias.color + '18', color: item.bias.color, borderColor: item.bias.color + '45' }}>
-                      {item.bias.label}
-                    </span>
-                  )}
-                  {item.confidence && (
-                    <span className="tag" style={{ background: item.confidence.color + '18', color: item.confidence.color, borderColor: item.confidence.color + '45' }}>
-                      {item.confidence.score}%
-                    </span>
-                  )}
-                </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-dim)', flexShrink: 0 }}>
+              {/* Tag / source / time row */}
+              <div style={{
+                display: 'flex', alignItems: 'baseline', gap: 7,
+                padding: '9px 10px 0 10px',
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: 7, fontWeight: 500,
+                  letterSpacing: '0.14em',
+                  color: meta.color,
+                  flexShrink: 0,
+                  textTransform: 'uppercase',
+                }}>
+                  {tag}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: 8, fontWeight: 300,
+                  color: 'var(--bronze)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  flex: 1, minWidth: 0,
+                  textTransform: 'uppercase',
+                }}>
+                  {item.source}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: 7, fontWeight: 300,
+                  color: 'var(--ivory-3)',
+                  flexShrink: 0,
+                }}>
                   {timeAgo(item.published)}
                 </span>
               </div>
 
-              {/* Image */}
-              {item.image && (
-                <img src={item.image} alt="" style={{
-                  width: '100%', height: 58, objectFit: 'cover',
-                  borderRadius: 4, marginBottom: 6,
-                  opacity: isHov ? 1 : 0.82,
-                  transition: 'opacity var(--t-fast)',
-                }} onError={e => e.target.style.display = 'none'} />
-              )}
-
-              {/* Title */}
+              {/* Headline */}
               <div style={{
-                fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 400,
-                color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: 6,
+                padding: '3px 10px 9px 10px',
+                fontFamily: 'var(--font-display)',
+                fontStyle: 'italic',
+                fontSize: 13,
+                fontWeight: 300,
+                color: 'var(--ivory)',
+                lineHeight: 1.38,
+                display: '-webkit-box',
+                WebkitLineClamp: isHov ? 'unset' : 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
               }}>
                 {item.title}
               </div>
 
-              {/* Coverage */}
-              {item.coverage_count > 1 && (
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 8, color: 'var(--teal)', marginBottom: 5 }}>
-                  {item.coverage_count} sources — {item.coverage_sources?.join(', ')}
-                </div>
-              )}
+              {/* Hover-expand detail */}
+              <div style={{
+                maxHeight: isHov ? '220px' : '0',
+                opacity: isHov ? 1 : 0,
+                overflow: 'hidden',
+                transition: 'max-height 280ms ease, opacity 200ms',
+              }}>
+                <div style={{ padding: '0 10px 10px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-              {/* Bottom row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <span className="tag" style={{ background: meta.bg, color: meta.color, borderColor: meta.border }}>
-                  {tag}
-                </span>
-                {onSave && (
-                  <span
-                    onClick={e => { e.stopPropagation(); onSave(item) }}
-                    title="Save to watchlist"
-                    style={{
-                      fontSize: 10, cursor: 'pointer', opacity: isHov ? 0.9 : 0.35,
-                      transition: 'opacity var(--t-fast)', lineHeight: 1,
-                    }}
-                  >🔖</span>
-                )}
-                {onSatellite && item.lat && item.lon && (
-                  <span
-                    onClick={e => { e.stopPropagation(); onSatellite(item) }}
-                    title="Satellite view"
-                    style={{
-                      fontSize: 10, cursor: 'pointer', opacity: isHov ? 0.9 : 0.35,
-                      transition: 'opacity var(--t-fast)', lineHeight: 1,
-                    }}
-                  >🛰</span>
-                )}
-                {hasMatch && (
-                  <span style={{
-                    fontFamily: 'var(--font-sans)', fontSize: 7, fontWeight: 600,
-                    color: 'var(--blue)', letterSpacing: 0.8, opacity: isHov ? 1 : 0.6,
-                    transition: 'opacity var(--t-fast)',
-                  }}>
-                    LOCATE
-                  </span>
-                )}
+                  {item.summary && (
+                    <p style={{
+                      fontFamily: 'var(--font-data)',
+                      fontSize: 9, fontWeight: 300,
+                      color: 'var(--ivory-2)',
+                      lineHeight: 1.55,
+                      margin: 0,
+                    }}>
+                      {item.summary.slice(0, 200)}{item.summary.length > 200 ? '…' : ''}
+                    </p>
+                  )}
+
+                  {item.coverage_count > 1 && (
+                    <div style={{ fontFamily: 'var(--font-data)', fontSize: 8, color: 'var(--pulse)' }}>
+                      {item.coverage_count} sources — {item.coverage_sources?.join(', ')}
+                    </div>
+                  )}
+
+                  {(item.bias || item.confidence) && (
+                    <div style={{ display: 'flex', gap: 5 }}>
+                      {item.bias && (
+                        <span style={{
+                          fontFamily: 'var(--font-data)', fontSize: 7, fontWeight: 500,
+                          letterSpacing: '0.1em', textTransform: 'uppercase',
+                          padding: '2px 6px', borderRadius: 2,
+                          color: item.bias.color,
+                          border: `1px solid ${item.bias.color}55`,
+                          background: `${item.bias.color}12`,
+                        }}>
+                          {item.bias.label}
+                        </span>
+                      )}
+                      {item.confidence && (
+                        <span style={{
+                          fontFamily: 'var(--font-data)', fontSize: 7, fontWeight: 500,
+                          letterSpacing: '0.1em', textTransform: 'uppercase',
+                          padding: '2px 6px', borderRadius: 2,
+                          color: item.confidence.color,
+                          border: `1px solid ${item.confidence.color}55`,
+                          background: `${item.confidence.color}12`,
+                        }}>
+                          {item.confidence.score}%
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Threat bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      flex: 1, height: 2, borderRadius: 1,
+                      background: `rgba(${meta.rgb},0.15)`,
+                      position: 'relative', overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        position: 'absolute', left: 0, top: 0, bottom: 0,
+                        width: tag === 'CRITICAL' ? '95%' : tag === 'MILITARY' ? '78%' : tag === 'DISASTER' ? '70%' : tag === 'POLITICAL' ? '50%' : '30%',
+                        background: meta.color,
+                        borderRadius: 1,
+                      }} />
+                    </div>
+                    <span style={{
+                      fontFamily: 'var(--font-data)', fontSize: 7,
+                      color: meta.color, letterSpacing: '0.1em',
+                    }}>
+                      {tag}
+                    </span>
+                  </div>
+
+                  {/* Action row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {hasGeo && (
+                      <ActionBtn
+                        label="LOCATE"
+                        pressed={pressedBtn === `loc-${i}`}
+                        onPress={() => { setPressedBtn(`loc-${i}`); setTimeout(() => setPressedBtn(null), 200) }}
+                        color="var(--bronze)"
+                      />
+                    )}
+                    {onSave && (
+                      <ActionBtn
+                        label="SAVE"
+                        pressed={pressedBtn === `save-${i}`}
+                        onPress={e => { e.stopPropagation(); setPressedBtn(`save-${i}`); setTimeout(() => setPressedBtn(null), 200); onSave(item) }}
+                        color="var(--ivory-3)"
+                      />
+                    )}
+                    {onSatellite && item.lat && item.lon && (
+                      <ActionBtn
+                        label="SAT"
+                        pressed={pressedBtn === `sat-${i}`}
+                        onPress={e => { e.stopPropagation(); setPressedBtn(`sat-${i}`); setTimeout(() => setPressedBtn(null), 200); onSatellite(item) }}
+                        color="var(--pulse)"
+                      />
+                    )}
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          fontFamily: 'var(--font-data)', fontSize: 7,
+                          fontWeight: 400, letterSpacing: '0.1em',
+                          color: 'var(--ivory-3)',
+                          textDecoration: 'none',
+                          marginLeft: 'auto',
+                          opacity: 0.7,
+                        }}
+                      >
+                        SRC ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )
         })}
       </div>
     </div>
+  )
+}
+
+function ActionBtn({ label, pressed, onPress, color }) {
+  return (
+    <button
+      onClick={onPress}
+      style={{
+        fontFamily: 'var(--font-data)',
+        fontSize: 7, fontWeight: 500,
+        letterSpacing: '0.12em',
+        padding: '3px 8px',
+        borderRadius: 2,
+        border: `1px solid ${color}55`,
+        background: `transparent`,
+        color,
+        cursor: 'pointer',
+        boxShadow: pressed ? 'var(--shadow-btn-active)' : 'var(--shadow-btn-rest)',
+        transform: pressed ? 'translateY(1.5px) scale(0.97)' : 'none',
+        transition: `transform 180ms var(--ease-spring), box-shadow 120ms`,
+      }}
+    >
+      {label}
+    </button>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { io } from 'socket.io-client'
 import GlobeMap from './components/OpsMap'
 import MobileMap from './components/MobileMap'
@@ -16,6 +16,23 @@ import WatchList from './components/WatchList'
 import PredictionPanel from './components/PredictionPanel'
 import SatellitePanel from './components/SatellitePanel'
 import './App.css'
+
+class GlobeErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { crashed: false } }
+  static getDerivedStateFromError() { return { crashed: true } }
+  render() {
+    if (this.state.crashed) {
+      return (
+        <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-data)', fontSize: 10, color: 'var(--ivory-3)', letterSpacing: '0.2em' }}>
+            GLOBE OFFLINE
+          </span>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const API = 'https://ops.unocloud.us'
 const isMobile = () => window.innerWidth < 1024 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
@@ -80,10 +97,10 @@ export default function App() {
   }, [])
 
   const getScoreColor = (s) => {
-    if (s >= 80) return '#ff2d55'
-    if (s >= 60) return '#ff9f0a'
-    if (s >= 40) return '#30d158'
-    return '#0a84ff'
+    if (s >= 80) return '#C44B2A'
+    if (s >= 60) return '#C4842A'
+    if (s >= 40) return '#4A8AC4'
+    return '#4A9E6A'
   }
 
   const getAlertLabel = (s) => {
@@ -98,41 +115,61 @@ export default function App() {
     setMobileTab('globe')
   }
 
+  /* ── Mobile layout ── */
   if (mobile) {
     const alertColor = getScoreColor(score)
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-root)', overflow: 'hidden', fontFamily: 'var(--font-sans)' }}>
+      <div style={{
+        display: 'flex', flexDirection: 'column',
+        height: '100vh',
+        background: 'var(--bg-0)',
+        overflow: 'hidden',
+        fontFamily: 'var(--font-data)',
+      }}>
 
         {/* Mobile header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'var(--bg-panel)',
-          backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
-          borderBottom: '1px solid var(--glass-border)',
+          background: 'var(--bg-1)',
+          borderBottom: '1px solid var(--seam)',
           padding: '10px 16px', flexShrink: 0,
-          boxShadow: '0 2px 20px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--shadow-panel)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: connected ? 'var(--moderate)' : 'var(--critical)',
-              boxShadow: connected ? '0 0 8px rgba(48,209,88,0.6)' : '0 0 8px rgba(255,45,85,0.6)',
-              animation: 'pulseScale 2s ease-in-out infinite',
+              width: 7, height: 7, borderRadius: '50%',
+              background: connected ? 'var(--pulse)' : 'var(--t7)',
+              boxShadow: connected
+                ? '0 0 0 2px rgba(61,191,184,0.18), 0 0 8px rgba(61,191,184,0.55)'
+                : '0 0 0 2px rgba(196,75,42,0.2), 0 0 8px rgba(196,75,42,0.5)',
+              animation: 'pulseScale 2.4s ease-in-out infinite',
             }} />
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: 3 }}>
+            <span style={{
+              fontFamily: 'var(--font-data)',
+              fontSize: 14, fontWeight: 500,
+              letterSpacing: '0.22em',
+              color: 'var(--ivory)',
+            }}>
               SIGINT OPS
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{
-              fontFamily: 'var(--font-sans)', fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
-              padding: '3px 10px', borderRadius: 5,
-              color: alertColor, background: alertColor + '18',
+              fontFamily: 'var(--font-data)', fontSize: 9, fontWeight: 500,
+              letterSpacing: '0.14em',
+              padding: '3px 10px', borderRadius: 4,
+              color: alertColor,
+              background: alertColor + '18',
               border: `1px solid ${alertColor}45`,
             }}>
               {getAlertLabel(score)}
             </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700, color: alertColor }}>
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontStyle: 'italic',
+              fontSize: 24, fontWeight: 300,
+              color: alertColor,
+            }}>
               {score}
             </span>
             <ThemeToggle onTheme={setDarkMode} />
@@ -146,7 +183,7 @@ export default function App() {
               <div style={{ height: '52%', flexShrink: 0 }}>
                 <MobileMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid var(--border)' }}>
+              <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid var(--seam)' }}>
                 <IntelFeed items={feedItems} incidents={incidents} onFlyTo={(loc) => setFlyTo(loc)} compact={true} />
               </div>
             </div>
@@ -159,7 +196,7 @@ export default function App() {
           )}
 
           {mobileTab === 'brief' && (
-            <div style={{ height: '100%', overflowY: 'auto', padding: 10 }}>
+            <div style={{ height: '100%', overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
               <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />
               <PredictionPanel score={score} />
               <TimelinePanel score={score} />
@@ -174,9 +211,8 @@ export default function App() {
         {/* Bottom tab bar */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-          background: 'var(--bg-panel)',
-          backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
-          borderTop: '1px solid var(--glass-border)',
+          background: 'var(--bg-1)',
+          borderTop: '1px solid var(--seam)',
           flexShrink: 0,
         }}>
           {[
@@ -200,9 +236,9 @@ export default function App() {
               >
                 <span style={{ fontSize: 20 }}>{tab.icon}</span>
                 <span style={{
-                  fontFamily: 'var(--font-sans)', fontSize: 9, fontWeight: 600,
-                  letterSpacing: 1, marginTop: 3,
-                  color: isActive ? alertColor : 'var(--text-dim)',
+                  fontFamily: 'var(--font-data)', fontSize: 9, fontWeight: 500,
+                  letterSpacing: '0.1em', marginTop: 3,
+                  color: isActive ? alertColor : 'var(--ivory-3)',
                   transition: 'color var(--t-mid)',
                 }}>
                   {tab.label}
@@ -216,20 +252,70 @@ export default function App() {
     )
   }
 
+  /* ── Desktop bento layout ── */
   return (
     <div className="ops-root">
       <Header score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} connected={connected} lastUpdate={lastUpdate} />
-      {!mobile && <TimelinePanel score={score} />}
-      {!mobile && <PredictionPanel score={score} />}
-      {!mobile && <BriefPanel brief={brief} briefUpdated={briefUpdated} score={score} />}
-      {!mobile && <AlertSystem feedItems={feedItems} />}
-      {!mobile && <CountryProfile feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />}
-      {!mobile && <WatchList />}
+
       <div className="ops-body">
-        <CinemaPanel />
-        <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
-        <IntelFeed items={feedItems} incidents={incidents} onFlyTo={setFlyTo} onSatellite={setSatelliteInc} onSave={(item) => { const saved = JSON.parse(localStorage.getItem('sigint-watchlist') || '[]'); localStorage.setItem('sigint-watchlist', JSON.stringify([{...item, id: Date.now(), savedAt: new Date().toISOString()}, ...saved].slice(0,50))) }} />
+
+        {/* Left column: Cinema — spans both grid rows */}
+        <div style={{ gridArea: 'left', display: 'grid', gridTemplateRows: '1fr', minHeight: 0, minWidth: 0 }}>
+          <CinemaPanel />
+        </div>
+
+        {/* Globe — top center cell */}
+        <div style={{ gridArea: 'globe', display: 'grid', gridTemplateRows: '1fr', minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+          <GlobeErrorBoundary>
+            <GlobeMap incidents={incidents} aircraft={aircraft} flyTo={flyTo} />
+          </GlobeErrorBoundary>
+        </div>
+
+        {/* Right column: Intel Feed — spans both grid rows */}
+        <div style={{ gridArea: 'right', display: 'flex', flexDirection: 'column', alignSelf: 'stretch', minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+          <IntelFeed
+            items={feedItems}
+            incidents={incidents}
+            onFlyTo={setFlyTo}
+            onSatellite={setSatelliteInc}
+            onSave={(item) => {
+              const saved = JSON.parse(localStorage.getItem('sigint-watchlist') || '[]')
+              localStorage.setItem('sigint-watchlist', JSON.stringify(
+                [{ ...item, id: Date.now(), savedAt: new Date().toISOString() }, ...saved].slice(0, 50)
+              ))
+            }}
+          />
+        </div>
+
+        {/* Bench — bottom center: collapse panels side by side */}
+        <div style={{
+          gridArea: 'bench',
+          display: 'flex',
+          gap: 5,
+          alignItems: 'flex-start',
+        }}>
+          {[
+            <BriefPanel      key="brief"    brief={brief} briefUpdated={briefUpdated} score={score} />,
+            <PredictionPanel key="pred"     score={score} />,
+            <AlertSystem     key="alert"    feedItems={feedItems} />,
+            <TimelinePanel   key="timeline" score={score} />,
+            <CountryProfile  key="country"  feedItems={feedItems} incidents={incidents} onFlyTo={setFlyTo} />,
+            <WatchList       key="watch" />,
+          ].map((panel, i) => (
+            <div
+              key={panel.key}
+              style={{
+                flex: 1, minWidth: 140,
+                animation: `mountIn var(--t-slow) var(--ease-spring) ${i * 55}ms both`,
+              }}
+            >
+              {panel}
+            </div>
+          ))}
+        </div>
+
       </div>
+
       {satelliteInc && <SatellitePanel incident={satelliteInc} onClose={() => setSatelliteInc(null)} />}
       <BottomBar score={score} activeInc={activeInc} sourcesOnline={sourcesOnline} feedItems={feedItems} brief={brief} />
     </div>
